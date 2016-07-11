@@ -294,13 +294,42 @@ describe('PluginBells', function () {
       it('should emit "fulfill_cancellation_condition" on incoming rejected transfers',
         itEmitsFulfillCancellationCondition)
 
-      it('should pass on incoming executed transfers', function * () {
+      it('should pass on incoming prepared transfers', function * () {
+        this.fiveBellsTransferExecuted.expires_at = (new Date()).toISOString()
+        this.fiveBellsTransferExecuted.state = 'prepared'
         this.wsRedLedger.send(JSON.stringify({
           resource: this.fiveBellsTransferExecuted
         }))
 
         yield new Promise((resolve) => this.wsRedLedger.on('message', resolve))
+        sinon.assert.calledOnce(this.stubReceive)
+        sinon.assert.calledWith(this.stubReceive, Object.assign(this.transfer, {
+          expiresAt: this.fiveBellsTransferExecuted.expires_at
+        }))
+      })
 
+      it('should pass on incoming executed transfers', function * () {
+        // The transfer is executed, so this.transfer doesn't have an expiredAt.
+        this.fiveBellsTransferExecuted.expires_at = (new Date()).toISOString()
+        this.wsRedLedger.send(JSON.stringify({
+          resource: this.fiveBellsTransferExecuted
+        }))
+
+        yield new Promise((resolve) => this.wsRedLedger.on('message', resolve))
+        sinon.assert.calledOnce(this.stubReceive)
+        sinon.assert.calledWith(this.stubReceive, this.transfer)
+      })
+
+      it('should ignore unrelated credits', function * () {
+        this.fiveBellsTransferExecuted.credits.push({
+          account: 'http://red.example/accounts/george',
+          amount: '10'
+        })
+        this.wsRedLedger.send(JSON.stringify({
+          resource: this.fiveBellsTransferExecuted
+        }))
+
+        yield new Promise((resolve) => this.wsRedLedger.on('message', resolve))
         sinon.assert.calledOnce(this.stubReceive)
         sinon.assert.calledWith(this.stubReceive, this.transfer)
       })

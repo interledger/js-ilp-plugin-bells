@@ -372,6 +372,10 @@ class FiveBellsLedger extends EventEmitter2 {
             : undefined
         }, lodash.isUndefined)
 
+        if (fiveBellsTransfer.state === 'executed') {
+          delete transfer.expiresAt
+        }
+
         if (fiveBellsTransfer.state === 'prepared' ||
             (fiveBellsTransfer.state === 'executed' && !transfer.executionCondition)) {
           yield this.emitAsync('receive', transfer)
@@ -426,10 +430,9 @@ class FiveBellsLedger extends EventEmitter2 {
             relatedResources.cancellation_condition_fulfillment)
         }
       }
-
-      if (!handled) {
-        throw new UnrelatedNotificationError('Notification does not seem related to connector')
-      }
+    }
+    if (!handled) {
+      throw new UnrelatedNotificationError('Notification does not seem related to connector')
     }
   }
 
