@@ -358,6 +358,8 @@ describe('PluginBells', function () {
       beforeEach(function () {
         this.stubFulfillExecutionCondition = sinon.stub()
         this.stubFulfillCancellationCondition = sinon.stub()
+        this.stubReceive = sinon.stub()
+        this.plugin.on('outgoing', this.stubReceive)
         this.plugin.on('fulfill_execution_condition', this.stubFulfillExecutionCondition)
         this.plugin.on('fulfill_cancellation_condition', this.stubFulfillCancellationCondition)
 
@@ -386,6 +388,19 @@ describe('PluginBells', function () {
         itEmitsFulfillExecutionCondition)
       it('should emit "fulfill_cancellation_condition" on outgoing rejected transfers',
         itEmitsFulfillCancellationCondition)
+      it('should notify of outgoing prepared transfers', function * () {
+        this.fiveBellsTransferExecuted.expires_at = (new Date()).toISOString()
+        this.fiveBellsTransferExecuted.state = 'prepared'
+        this.wsRedLedger.send(JSON.stringify({
+          resource: this.fiveBellsTransferExecuted
+        }))
+
+        yield new Promise((resolve) => this.wsRedLedger.on('message', resolve))
+        sinon.assert.calledOnce(this.stubReceive)
+        sinon.assert.calledWith(this.stubReceive, Object.assign(this.transfer, {
+          expiresAt: this.fiveBellsTransferExecuted.expires_at
+        }))
+      })
     })
 
     describe('disconnect', function () {

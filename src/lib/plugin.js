@@ -429,6 +429,11 @@ class FiveBellsLedger extends EventEmitter2 {
           yield this.emitAsync('fulfill_cancellation_condition', transfer,
             relatedResources.cancellation_condition_fulfillment)
         }
+
+        if (fiveBellsTransfer.state === 'prepared' ||
+            (fiveBellsTransfer.state === 'executed' && !transfer.executionCondition)) {
+          yield this.emitAsync('outgoing', transfer)
+        }
       }
     }
     if (!handled) {
