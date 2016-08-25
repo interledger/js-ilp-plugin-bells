@@ -331,7 +331,9 @@ class FiveBellsLedger extends EventEmitter2 {
   }
 
   * _send (transfer) {
-    // Strip off the prefix and request id.
+    // ILP addresses have two parts the ledger and the account. ilp-plugin-bells
+    // will ignore everything after the first `.` of the account, so it can be used
+    // to represent subledgering.
     const sourceUsername = transfer.account.slice(this.prefix.length).split('.')[0]
     const fiveBellsTransfer = omitUndefined({
       id: this.host + '/transfers/' + transfer.id,
