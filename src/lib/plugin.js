@@ -331,7 +331,10 @@ class FiveBellsLedger extends EventEmitter2 {
   }
 
   * _send (transfer) {
-    const sourceAddress = parseAddress(transfer.account)
+    // ILP addresses have two parts the ledger and the account. ilp-plugin-bells
+    // will ignore everything after the first `.` of the account, so it can be used
+    // to represent subledgering.
+    const sourceUsername = transfer.account.slice(this.prefix.length).split('.')[0]
     const fiveBellsTransfer = omitUndefined({
       id: this.host + '/transfers/' + transfer.id,
       ledger: this.host,
@@ -342,7 +345,7 @@ class FiveBellsLedger extends EventEmitter2 {
         memo: transfer.noteToSelf
       })],
       credits: [omitUndefined({
-        account: this.host + '/accounts/' + encodeURIComponent(sourceAddress.username),
+        account: this.host + '/accounts/' + encodeURIComponent(sourceUsername),
         amount: transfer.amount,
         memo: transfer.data
       })],
@@ -545,14 +548,6 @@ class FiveBellsLedger extends EventEmitter2 {
     for (let i = 0; i < templatePath.length; i++) {
       if (templatePath[i] === ':name') return accountPath[i]
     }
-  }
-}
-
-function parseAddress (address) {
-  const addressParts = address.split('.')
-  return {
-    ledger: addressParts.slice(0, -1).join('.'),
-    username: addressParts[addressParts.length - 1]
   }
 }
 

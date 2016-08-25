@@ -23,3 +23,5 @@ const client = new Client({
   }
 })
 ```
+
+ILP addresses have two parts the ledger and the account. ilp-plugin-bells will ignore everything after the first `.` of the account, so it can be used to represent subledgering.
