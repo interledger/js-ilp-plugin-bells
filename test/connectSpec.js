@@ -261,8 +261,7 @@ describe('Connection methods', function () {
         'accounts': 'http://thing.example/a',
         'account': 'http://red.example/accounts/:name',
         'auth_token': 'http://red.example/auth_token',
-        'websocket': 'ws://red.example/websocket',
-        'message': 'http://red.example/messages'
+        'websocket': 'ws://red.example/websocket'
       }
       const infoNock = nock('http://red.example')
         .get('/')
@@ -275,8 +274,7 @@ describe('Connection methods', function () {
         'transfer_rejection',
         'account',
         'auth_token',
-        'websocket',
-        'message'
+        'websocket'
       ]), 'urls should be set from metadata')
       accountNock.done()
       infoNock.done()

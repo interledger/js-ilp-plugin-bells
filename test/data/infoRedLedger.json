@@ -20,7 +20,6 @@
     "accounts": "http://red.example/accounts",
     "account": "http://red.example/accounts/:name",
     "auth_token": "http://red.example/auth_token",
-    "websocket": "ws://red.example/websocket",
-    "message": "http://red.example/messages"
+    "websocket": "ws://red.example/websocket"
   }
 }
