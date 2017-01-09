@@ -12,7 +12,6 @@ const nock = require('nock')
 const wsHelper = require('./helpers/ws')
 const errors = require('../src/errors')
 const cloneDeep = require('lodash/cloneDeep')
-const _ = require('lodash')
 
 mock('ws', wsHelper.WebSocket)
 const PluginBells = require('..')
@@ -23,7 +22,6 @@ describe('Messaging', function () {
       prefix: 'example.red.',
       account: 'http://red.example/accounts/mike',
       password: 'mike',
-      debugReplyNotifications: true,
       debugAutofund: {
         connector: 'http://mark.example',
         admin: {username: 'adminuser', password: 'adminpass'}
@@ -64,51 +62,22 @@ describe('Messaging', function () {
   })
 
   describe('sendMessage', function () {
-    it('submits a message', function * () {
-      nock('http://red.example')
-        .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
-        .reply(200)
-      yield assert.isFulfilled(this.plugin.sendMessage(this.message), null)
-    })
-
-    it('should use the message url from the ledger metadata', function * () {
-      nock.removeInterceptor(this.nockInfo)
-      nock('http://red.example')
-        .get('/auth_token')
-        .reply(200, {token: 'abc'})
-      nock('http://red.example')
-        .get('/accounts/mike')
-        .reply(200, {
-          ledger: 'http://red.example',
-          name: 'mike'
+    it('submits a message', function (done) {
+      const sendMessage = this.plugin.sendMessage(this.message)
+      this.wsRedLedger.on('message', (rpcMessageString) => {
+        const rpcMessage = JSON.parse(rpcMessageString)
+        assert.deepEqual(rpcMessage, {
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'send_message',
+          params: this.ledgerMessage
         })
-      const nockInfo = nock('http://red.example')
-        .get('/')
-        .reply(200, _.merge(this.infoRedLedger, {
-          urls: {
-            message: 'http://red.example/other/place/to/submit/messages'
-          }
+        this.wsRedLedger.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: rpcMessage.id
         }))
-      const messageNock = nock('http://red.example')
-        .post('/other/place/to/submit/messages')
-        .reply(200)
-      const plugin = new PluginBells({
-        prefix: 'example.red.',
-        account: 'http://red.example/accounts/mike',
-        password: 'mike',
-        debugReplyNotifications: true,
-        debugAutofund: {
-          connector: 'http://mark.example',
-          admin: {username: 'adminuser', password: 'adminpass'}
-        }
+        assert.isFulfilled(sendMessage, null).then(done)
       })
-      yield plugin.connect()
-
-      yield plugin.sendMessage(this.message)
-
-      nockInfo.done()
-      messageNock.done()
     })
 
     it('throws InvalidFieldsError for missing account', function (done) {
@@ -148,31 +117,43 @@ describe('Messaging', function () {
       }), /^InvalidFieldsError: Destination address "red.alice" must start with ledger prefix "example.red."$/)
     })
 
-    it('throws an InvalidFieldsError on InvalidBodyError', function (done) {
-      nock('http://red.example')
-        .post('/messages')
-        .basicAuth({user: 'mike', pass: 'mike'})
-        .reply(400, {id: 'InvalidBodyError', message: 'fail'})
+    it('throws an InvalidFieldsError on 40003', function (done) {
+      this.wsRedLedger.on('message', (rpcMessageString) => {
+        const rpcMessage = JSON.parse(rpcMessageString)
+        this.wsRedLedger.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: rpcMessage.id,
+          error: { code: 40003, message: 'fail' }
+        }))
+      })
 
       this.plugin.sendMessage(this.message)
         .should.be.rejectedWith(errors.InvalidFieldsError, 'fail').notify(done)
     })
 
-    it('throws a NoSubscriptionsError', function (done) {
-      nock('http://red.example')
-        .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
-        .reply(422, {id: 'NoSubscriptionsError', message: 'fail'})
+    it('throws a NoSubscriptionsError on 42200', function (done) {
+      this.wsRedLedger.on('message', (rpcMessageString) => {
+        const rpcMessage = JSON.parse(rpcMessageString)
+        this.wsRedLedger.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: rpcMessage.id,
+          error: { code: 42200, message: 'fail' }
+        }))
+      })
 
       this.plugin.sendMessage(this.message)
         .should.be.rejectedWith(errors.NoSubscriptionsError, 'fail').notify(done)
     })
 
-    it('throws an NotAcceptedError on 400', function (done) {
-      nock('http://red.example')
-        .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
-        .reply(400, {id: 'SomeError', message: 'fail'})
+    it('throws an NotAcceptedError on 50000', function (done) {
+      this.wsRedLedger.on('message', (rpcMessageString) => {
+        const rpcMessage = JSON.parse(rpcMessageString)
+        this.wsRedLedger.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: rpcMessage.id,
+          error: { code: 50000, message: 'fail' }
+        }))
+      })
 
       this.plugin.sendMessage(this.message)
         .should.be.rejectedWith(errors.NotAcceptedError, 'fail').notify(done)

@@ -161,6 +161,7 @@ class PluginFactory {
     plugin.connect = function () { return Promise.resolve(null) }
     plugin.isConnected = () => this.isConnected()
 
+    plugin.ws = this.adminPlugin.ws // ensure sendMessage works
     plugin.urls = this.metadata.urls
     plugin.info = this.metadata.info
     plugin.prefix = this.metadata.prefix

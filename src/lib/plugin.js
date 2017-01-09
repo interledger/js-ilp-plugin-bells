@@ -20,7 +20,7 @@ const backoffMin = 1000
 const backoffMax = 30000
 const defaultConnectTimeout = 60000
 
-const REQUIRED_LEDGER_URLS = [ 'transfer', 'transfer_fulfillment', 'transfer_rejection', 'account', 'auth_token', 'websocket', 'message' ]
+const REQUIRED_LEDGER_URLS = [ 'transfer', 'transfer_fulfillment', 'transfer_rejection', 'account', 'auth_token', 'websocket' ]
 
 function wait (ms) {
   return function (done) {
@@ -442,20 +442,7 @@ class FiveBellsLedger extends EventEmitter2 {
       to: this.urls.account.replace(':name', encodeURIComponent(destinationAddress.username)),
       data: message.data
     }
-
-    const sendRes = yield request(Object.assign(
-      requestCredentials(this.credentials), {
-        method: 'post',
-        uri: this.urls.message,
-        body: fiveBellsMessage,
-        json: true
-      }))
-    const body = sendRes.body
-    if (sendRes.statusCode >= 400) {
-      if (body.id === 'InvalidBodyError') throw new errors.InvalidFieldsError(body.message)
-      if (body.id === 'NoSubscriptionsError') throw new errors.NoSubscriptionsError(body.message)
-      throw new errors.NotAcceptedError(body.message)
-    }
+    yield this._sendRpcRequest('send_message', fiveBellsMessage)
     return null
   }
 
@@ -646,7 +633,12 @@ class FiveBellsLedger extends EventEmitter2 {
         // event is part way through being emitted, which causes issues iterating the listeners.
         process.nextTick(() => this.removeListener('_rpc:response', listener))
         if (rpcResponse.error) {
-          return reject(new ExternalError(rpcResponse.error.message))
+          const code = rpcResponse.error.code
+          const message = rpcResponse.error.message
+          return reject(
+            code === 42200 ? new errors.NoSubscriptionsError(message)
+            : (code >= 40000 && code < 50000) ? new errors.InvalidFieldsError(message)
+            : new errors.NotAcceptedError(message))
         }
         resolve(rpcResponse)
       }

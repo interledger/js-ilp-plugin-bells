@@ -167,22 +167,28 @@ describe('PluginBellsFactory', function () {
       yield handled
     })
 
-    it('send a message as the correct username', function * () {
-      nock('http://red.example')
-        .post('/messages', {
-          from: 'http://red.example/accounts/mike',
-          to: 'http://red.example/accounts/alice',
-          ledger: 'http://red.example',
-          data: { foo: 'bar' }
+    it('send a message as the correct username', function (done) {
+      this.wsRedLedger.on('message', (rpcMessageString) => {
+        const rpcMessage = JSON.parse(rpcMessageString)
+        assert.deepEqual(rpcMessage, {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'send_message',
+          params: {
+            from: 'http://red.example/accounts/mike',
+            to: 'http://red.example/accounts/alice',
+            ledger: 'http://red.example',
+            data: { foo: 'bar' }
+          }
         })
-        .basicAuth({user: 'admin', pass: 'admin'})
-        .reply(200)
+        done()
+      })
 
-      yield this.plugin.sendMessage({
+      this.plugin.sendMessage({
         ledger: 'example.red.',
         account: 'example.red.alice',
         data: { foo: 'bar' }
-      })
+      }).catch(done)
     })
 
     it('sends a transfer with the correct fields', function * () {
