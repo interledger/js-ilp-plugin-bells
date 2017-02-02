@@ -591,7 +591,10 @@ class FiveBellsLedger extends EventEmitter2 {
       requestCredentials(this.credentials), {
         method: 'put',
         uri: this.ledgerContext.urls.transfer_rejection.replace(':id', transferId),
-        body: rejectionMessage
+        body: rejectionMessage,
+        headers: {
+          'Content-Type': 'text/plain'
+        }
       }))
     const body = getResponseJSON(rejectionRes)
 

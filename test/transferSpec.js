@@ -465,7 +465,11 @@ describe('Transfer methods', function () {
 
   describe('rejectIncomingTransfer', function () {
     it('returns null on success', function * () {
-      nock('http://red.example')
+      nock('http://red.example', {
+        reqheaders: {
+          'Content-Type': 'text/plain'
+        }
+      })
         .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/rejection', 'fail!')
         .reply(200, {whatever: true})
       yield assert.isFulfilled(
