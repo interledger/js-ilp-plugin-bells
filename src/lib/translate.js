@@ -162,7 +162,6 @@ const translateTransferNotification = (
 
 const translateMessageNotification = (message, account, ledgerContext) => {
   validateMessage(message, ledgerContext)
-  console.log('message', message)
   return [
     'incoming_message',
     {
