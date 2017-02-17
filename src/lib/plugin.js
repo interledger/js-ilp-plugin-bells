@@ -162,6 +162,7 @@ class FiveBellsLedger extends EventEmitter2 {
       })
   }
 
+  // Connect to the websocket and then subscribe to account notifications
   * _connect (options) {
     if (this.ready) {
       debug('already connected, ignoring connection request')
@@ -240,7 +241,7 @@ class FiveBellsLedger extends EventEmitter2 {
     })
 
     const timeout = options.timeout
-    return Promise.race([
+    const connectTimeoutRace = Promise.race([
       // if the timeout occurs before the websocket is successfully established,
       // the connect function will throw an error.
       wait(timeout).then(() => {
@@ -323,8 +324,11 @@ class FiveBellsLedger extends EventEmitter2 {
             reject(err)
           })
           .connect()
-      }).then(() => this._subscribeAccounts([this.account]))
+      })
     ])
+
+    return connectTimeoutRace
+      .then(() => this._subscribeAccounts([this.account]))
   }
 
   disconnect () {
@@ -643,10 +647,13 @@ class FiveBellsLedger extends EventEmitter2 {
         if (rpcResponse.error) {
           return reject(new ExternalError(rpcResponse.error.message))
         }
+        debug('got RPC response', rpcMessage)
         resolve(rpcResponse)
       }
       this.on('_rpc:response', listener)
-      this.ws.send(JSON.stringify({ jsonrpc: '2.0', id: requestId, method, params }))
+      const rpcMessage = JSON.stringify({ jsonrpc: '2.0', id: requestId, method, params })
+      debug('sending RPC message', rpcMessage)
+      this.ws.send(rpcMessage)
     })
   }
 
