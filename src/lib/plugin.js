@@ -418,6 +418,7 @@ class FiveBellsLedger extends EventEmitter2 {
   }
 
   * _sendMessage (message) {
+    debug('sending message: ' + JSON.stringify(message))
     if (!this.ready) {
       throw new Error('Must be connected before sendMessage can be called')
     }
@@ -438,6 +439,7 @@ class FiveBellsLedger extends EventEmitter2 {
       to: this.ledgerContext.urls.account.replace(':name', encodeURIComponent(destinationAddress.username)),
       data: message.data
     }
+    debug('converted to ledger message: ' + JSON.stringify(fiveBellsMessage))
 
     const sendRes = yield request(Object.assign(
       requestCredentials(this.credentials), {
@@ -448,6 +450,7 @@ class FiveBellsLedger extends EventEmitter2 {
       }))
     const body = sendRes.body
     if (sendRes.statusCode >= 400) {
+      debug('error submitting message:', sendRes.statusCode, JSON.stringify(sendRes.body))
       if (body.id === 'InvalidBodyError') throw new errors.InvalidFieldsError(body.message)
       if (body.id === 'NoSubscriptionsError') throw new errors.NoSubscriptionsError(body.message)
       throw new errors.NotAcceptedError(body.message)
