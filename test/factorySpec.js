@@ -94,6 +94,10 @@ describe('PluginBellsFactory', function () {
 
       const nockMike = nock('http://red.example')
         .get('/accounts/mike')
+        .basicAuth({
+          user: 'admin',
+          pass: 'admin'
+        })
         .reply(200, {
           ledger: 'http://red.example',
           name: 'admin'
@@ -236,6 +240,10 @@ describe('PluginBellsFactory', function () {
       it('subscribes to the new account', function (done) {
         nock('http://red.example')
           .get('/accounts/mary')
+          .basicAuth({
+            user: 'admin',
+            pass: 'admin'
+          })
           .reply(200, {
             ledger: 'http://red.example',
             name: 'admin'

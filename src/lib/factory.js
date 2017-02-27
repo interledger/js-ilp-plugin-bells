@@ -148,13 +148,14 @@ class PluginFactory extends EventEmitter2 {
 
     // make sure that the account exists
     const exists = yield request(account, {
-      headers: {
-        Authorization: this.adminUsername + ':' + this.adminPassword
+      auth: {
+        username: this.adminUsername,
+        password: this.adminPassword
       }
     })
 
     if (exists.statusCode !== 200) {
-      const msg = 'account ' + account + ' cannot be reached: ' + exists.statusCode
+      const msg = 'account ' + account + ' cannot be reached: ' + exists.statusCode + ' ' + JSON.stringify(exists.body)
       debug(msg)
       throw new UnreachableError(msg)
     }
