@@ -607,7 +607,7 @@ class FiveBellsLedger extends EventEmitter2 {
 
   /**
    * @param {String} transferId
-   * @param {String} rejectionMessage
+   * @param {RejectionMessage} rejectionMessage
    * @returns {Promise<null>}
    */
   rejectIncomingTransfer (transferId, rejectionMessage) {
@@ -623,11 +623,9 @@ class FiveBellsLedger extends EventEmitter2 {
         method: 'put',
         uri: this.ledgerContext.urls.transfer_rejection.replace(':id', transferId),
         body: rejectionMessage,
-        headers: {
-          'Content-Type': 'text/plain'
-        }
+        json: true
       }))
-    const body = getResponseJSON(rejectionRes)
+    const body = rejectionRes.body
 
     if (rejectionRes.statusCode >= 400) {
       if (body && body.id === 'UnauthorizedError') throw new errors.NotAcceptedError(body.message)

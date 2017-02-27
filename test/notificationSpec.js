@@ -329,6 +329,15 @@ describe('Notification handling', function () {
       itEmitsFulfillCancellationCondition)
 
     it('should emit "incoming_reject" with the rejection_message', function * () {
+      const rejectionMessage = {
+        code: 'T00',
+        name: 'Internal Error',
+        message: 'fail!',
+        triggered_by: 'example.red.',
+        triggered_at: (new Date()).toISOString(),
+        additional_info: {}
+      }
+
       this.wsRedLedger.send(JSON.stringify({
         jsonrpc: '2.0',
         id: null,
@@ -340,7 +349,7 @@ describe('Notification handling', function () {
             credits: [
               Object.assign(this.fiveBellsTransferExecuted.credits[0], {
                 rejected: true,
-                rejection_message: new Buffer('fail!').toString('base64')
+                rejection_message: rejectionMessage
               })
             ]
           })
@@ -353,7 +362,7 @@ describe('Notification handling', function () {
       sinon.assert.notCalled(this.stubFulfillExecutionCondition)
       sinon.assert.notCalled(this.stubFulfillCancellationCondition)
       sinon.assert.calledOnce(this.stubReject)
-      sinon.assert.calledWith(this.stubReject, this.transfer, 'fail!')
+      sinon.assert.calledWith(this.stubReject, this.transfer, rejectionMessage)
     })
 
     it('should pass on incoming prepared transfers', function * () {
@@ -459,6 +468,15 @@ describe('Notification handling', function () {
       itEmitsFulfillCancellationCondition)
 
     it('should emit outgoing_cancel with the rejection_message', function * () {
+      const rejectionMessage = {
+        code: 'T00',
+        name: 'Internal Error',
+        message: 'fail!',
+        triggered_by: 'example.red.',
+        triggered_at: (new Date()).toISOString(),
+        additional_info: {}
+      }
+
       this.wsRedLedger.send(JSON.stringify({
         jsonrpc: '2.0',
         id: null,
@@ -470,7 +488,7 @@ describe('Notification handling', function () {
             credits: [
               Object.assign(this.fiveBellsTransferExecuted.credits[0], {
                 rejected: true,
-                rejection_message: new Buffer('fail!').toString('base64')
+                rejection_message: rejectionMessage
               })
             ]
           })
@@ -483,7 +501,7 @@ describe('Notification handling', function () {
       sinon.assert.notCalled(this.stubFulfillExecutionCondition)
       sinon.assert.notCalled(this.stubFulfillCancellationCondition)
       sinon.assert.calledOnce(this.stubOutgoingReject)
-      sinon.assert.calledWith(this.stubOutgoingReject, this.transfer, 'fail!')
+      sinon.assert.calledWith(this.stubOutgoingReject, this.transfer, rejectionMessage)
     })
 
     it('be notified of an outgoing prepare', function * () {

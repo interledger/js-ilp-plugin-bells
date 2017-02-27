@@ -91,10 +91,16 @@ const translateTransferNotification = (
       } else if (fiveBellsTransfer.state === 'rejected') {
         const rejectedCredit = find(fiveBellsTransfer.credits, 'rejected')
         if (rejectedCredit) {
-          return ['incoming_reject', transfer,
-            new Buffer(rejectedCredit.rejection_message, 'base64').toString()]
+          return ['incoming_reject', transfer, rejectedCredit.rejection_message]
         } else {
-          return ['incoming_cancel', transfer, 'transfer timed out.']
+          return ['incoming_cancel', transfer, {
+            code: 'R01',
+            name: 'Transfer Timed Out',
+            message: 'transfer timed out.',
+            triggered_by: ledgerContext.prefix + ledgerContext.accountUriToName(account),
+            triggered_at: (new Date()).toISOString(),
+            additional_info: {}
+          }]
         }
       }
     }
@@ -147,10 +153,16 @@ const translateTransferNotification = (
       } else if (fiveBellsTransfer.state === 'rejected') {
         const rejectedCredit = find(fiveBellsTransfer.credits, 'rejected')
         if (rejectedCredit) {
-          return ['outgoing_reject', transfer,
-            new Buffer(rejectedCredit.rejection_message, 'base64').toString()]
+          return ['outgoing_reject', transfer, rejectedCredit.rejection_message]
         } else {
-          return ['outgoing_cancel', transfer, 'transfer timed out.']
+          return ['outgoing_cancel', transfer, {
+            code: 'R01',
+            name: 'Transfer Timed Out',
+            message: 'transfer timed out.',
+            triggered_by: ledgerContext.prefix + ledgerContext.accountUriToName(account),
+            triggered_at: (new Date()).toISOString(),
+            additional_info: {}
+          }]
         }
       }
     }
