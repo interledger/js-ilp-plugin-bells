@@ -402,7 +402,10 @@ describe('Transfer methods', function () {
 
   describe('getFulfillment', function () {
     it('returns the fulfillment', function * () {
-      nock('http://red.example')
+      nock('http://red.example', {
+        reqheaders: {
+          'Accept': '*/*'
+        }})
         .get('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment')
         .basicAuth({user: 'mike', pass: 'mike'})
         .reply(200, 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
