@@ -436,6 +436,17 @@ describe('Transfer methods', function () {
       return assert.isRejected(this.plugin.getFulfillment('6851929f-5a91-4d02-b9f4-4ae6b7f1768c'), errors.MissingFulfillmentError)
     })
 
+    it('throws MissingFulfillmentError on 404 NotFoundError', function * () {
+      nock('http://red.example')
+        .get('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment')
+        .basicAuth({user: 'mike', pass: 'mike'})
+        .reply(404, {
+          id: 'NotFoundError',
+          message: 'This transfer has no fulfillment'
+        })
+      return assert.isRejected(this.plugin.getFulfillment('6851929f-5a91-4d02-b9f4-4ae6b7f1768c'), errors.MissingFulfillmentError)
+    })
+
     it('throws an ExternalError on 500', function * () {
       nock('http://red.example')
         .get('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment')

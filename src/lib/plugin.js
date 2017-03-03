@@ -590,6 +590,7 @@ class FiveBellsLedger extends EventEmitter2 {
     debug('error getting fulfillment: ' + res.statusCode + ' ' + JSON.stringify(res.body))
     if (res.statusCode >= 400 && res.body) {
       if (res.body.id === 'MissingFulfillmentError') throw new errors.MissingFulfillmentError(res.body.message)
+      if (res.body.id === 'NotFoundError') throw new errors.MissingFulfillmentError(res.body.message)
       if (res.body.id === 'TransferNotFoundError') throw new errors.TransferNotFoundError(res.body.message)
       if (res.body.id === 'AlreadyRolledBackError') throw new errors.AlreadyRolledBackError(res.body.message)
       if (res.body.id === 'TransferNotConditionalError') throw new errors.TransferNotConditionalError(res.body.message)
