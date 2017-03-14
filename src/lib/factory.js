@@ -132,8 +132,8 @@ class PluginFactory extends EventEmitter2 {
 
     const username = opts.username || this.ledgerContext.accountUriToName(opts.account)
 
-    if (typeof username !== 'string' || !/^[a-z0-9]([a-z0-9]|[-](?!-)){0,18}[a-z0-9]$/.test(username)) {
-      throw new Error('Invalid username')
+    if (typeof username !== 'string' || !/^[a-zA-Z0-9_-]{1,86}$/.test(username)) {
+      throw new Error('Invalid username: ' + username)
     }
 
     // try to retrieve existing plugin

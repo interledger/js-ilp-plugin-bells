@@ -227,6 +227,19 @@ describe('PluginBellsFactory', function () {
         assert.equal(this.plugin, plugin, 'account should resolve to same username')
       })
 
+      it('will allow a username with underscores and dashes', function * () {
+        const username = 'mike_12-34'
+        const nockMike = nock('http://red.example')
+          .get('/accounts/' + username)
+          .reply(200)
+        assert.isObject(this.plugin)
+        assert.isTrue(this.plugin.isConnected())
+
+        const plugin = yield this.factory.create({ account: 'http://red.example/accounts/' + username })
+        assert.equal(plugin.username, username, 'account should resolve to same username')
+        nockMike.done()
+      })
+
       it('throws an error when account and username are both supplied', function (done) {
         this.factory.create({
           username: 'mike',
@@ -267,7 +280,7 @@ describe('PluginBellsFactory', function () {
 
       it('will throw if given an invalid opts.username', function (done) {
         this.factory.create({ username: 'foo!' }).catch((err) => {
-          assert.equal(err.message, 'Invalid username')
+          assert.equal(err.message, 'Invalid username: foo!')
           done()
         })
       })
