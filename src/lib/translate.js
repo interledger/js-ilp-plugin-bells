@@ -145,7 +145,9 @@ const translateTransferNotification = (
       // TODO: What if there are multiple debits?
       const debit = fiveBellsTransfer.debits[0]
 
-      const integerAmount = (new BigNumber(credit.amount)).shift(ledgerContext.getInfo().scale)
+      // for legacy reasons, the FiveBells ledger API uses float values for amounts of debits and credits,
+      // which need to be multiplied by currencyScale to get their integer value in ledger units.
+      const integerAmount = (new BigNumber(credit.amount)).shift(ledgerContext.getInfo().currencyScale)
       const transfer = omitNil({
         id: fiveBellsTransfer.id.substring(fiveBellsTransfer.id.length - 36),
         direction: 'incoming',
@@ -211,7 +213,9 @@ const translateTransferNotification = (
       //       credits/debits?
       const credit = fiveBellsTransfer.credits[0]
 
-      const integerAmount = (new BigNumber(debit.amount)).shift(ledgerContext.getInfo().scale)
+      // for legacy reasons, the FiveBells ledger API uses float values for amounts of debits and credits,
+      // which need to be multiplied by currencyScale to get their integer value in ledger units.
+      const integerAmount = (new BigNumber(credit.amount)).shift(ledgerContext.getInfo().currencyScale)
       const transfer = omitNil({
         id: fiveBellsTransfer.id.substring(fiveBellsTransfer.id.length - 36),
         direction: 'outgoing',
@@ -289,8 +293,9 @@ const translateMessageNotification = (message, account, ledgerContext) => {
 
 const translatePluginApiToBells = (transfer, account, ledgerContext) => {
   const sourceAddress = ledgerContext.parseAddress(transfer.to)
-  const fiveBellsAmount = (new BigNumber(transfer.amount))
-    .shift(-ledgerContext.getInfo().scale)
+  // for legacy reasons, the FiveBells ledger API uses float values for amounts of debits and credits,
+  // which need to be multiplied by currencyScale to get their integer value in ledger units.
+  const fiveBellsAmount = (new BigNumber(transfer.amount)).shift(-ledgerContext.getInfo().currencyScale)
     .toString()
   return omitNil({
     id: ledgerContext.urls.transfer.replace(':id', transfer.id),

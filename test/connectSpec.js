@@ -184,20 +184,7 @@ describe('Connection methods', function () {
       nock('http://red.example')
         .get('/')
         .reply(500)
-      return this.plugin.connect().should.be.rejectedWith(ExternalError, /Unable to determine ledger precision/)
-    })
-
-    it('rejects with ExternalError when info is missing precision', function () {
-      nock('http://red.example')
-        .get('/accounts/mike')
-        .reply(200, {
-          ledger: 'http://red.example',
-          name: 'mike'
-        })
-      nock('http://red.example')
-        .get('/')
-        .reply(200, {scale: 4})
-      return this.plugin.connect().should.be.rejectedWith(ExternalError, /Unable to determine ledger precision/)
+      return this.plugin.connect().should.be.rejectedWith(ExternalError, /Unable to determine ledger metadata/)
     })
 
     it('ignores if called twice in series', function * () {
@@ -401,9 +388,7 @@ describe('Connection methods', function () {
           prefix: 'example.red.',
           connectors: ['example.red.mark'],
           currencyCode: 'USD',
-          currencySymbol: '$',
-          precision: 10,
-          scale: 2
+          currencyScale: 2
         })
       })
 
@@ -417,20 +402,7 @@ describe('Connection methods', function () {
         nock('http://red.example')
           .get('/')
           .reply(500)
-        return assert.isRejected(this.plugin.connect(), ExternalError, /Unable to determine ledger precision/)
-      })
-
-      it('throws an ExternalError when the precision is missing', function () {
-        nock('http://red.example')
-          .get('/accounts/mike')
-          .reply(200, {
-            ledger: 'http://red.example',
-            name: 'mike'
-          })
-        nock('http://red.example')
-          .get('/')
-          .reply(200, {scale: 4})
-        return assert.isRejected(this.plugin.connect(), ExternalError, /Unable to determine ledger precision/)
+        return assert.isRejected(this.plugin.connect(), ExternalError, /Unable to determine ledger metadata/)
       })
     })
 

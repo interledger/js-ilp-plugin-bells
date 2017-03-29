@@ -48,10 +48,8 @@ class LedgerContext {
     return {
       prefix: this.prefix,
       connectors: ledgerMetadata.connectors.map((c) => this.prefix + c.name),
-      precision: ledgerMetadata.precision,
-      scale: ledgerMetadata.scale,
       currencyCode: ledgerMetadata.currency_code,
-      currencySymbol: ledgerMetadata.currency_symbol
+      currencyScale: ledgerMetadata.scale // this is the name for it in the fivebells API, for legacy reasons
     }
   }
 

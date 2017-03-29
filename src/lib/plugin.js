@@ -321,7 +321,7 @@ class FiveBellsLedger extends EventEmitter2 {
   * _fetchLedgerMetadata (host) {
     debug('request ledger metadata %s', host)
     function throwErr () {
-      throw new ExternalError('Unable to determine ledger precision')
+      throw new ExternalError('Unable to determine ledger metadata')
     }
 
     let res
@@ -334,8 +334,11 @@ class FiveBellsLedger extends EventEmitter2 {
       }
     }
 
-    if (!res || res.statusCode !== 200) throwErr()
-    if (!res.body.precision || !res.body.scale) throwErr()
+    if (!res || res.statusCode !== 200) { throwErr() }
+
+    // note that the fivebells ledger API uses 'scale' instead of 'currency_scale'.
+    // fields like 'ilp_prefix' and 'currency_code' are not mandatory
+    if (!res.body.connectors || !res.body.scale) { throwErr() }
 
     return res.body
   }
@@ -368,7 +371,7 @@ class FiveBellsLedger extends EventEmitter2 {
       throw new ExternalError('Unable to determine current balance')
     }
     const ledgerBalance = new BigNumber(res.body.balance)
-    const integerBalance = ledgerBalance.shift(this.ledgerContext.getInfo().scale)
+    const integerBalance = ledgerBalance.shift(this.ledgerContext.getInfo().currencyScale)
     return integerBalance.toString()
   }
 

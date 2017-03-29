@@ -43,7 +43,7 @@ describe('PluginBellsFactory', function () {
           id: 'ac518dfb-b8a6-49ef-b78d-5e26e81d7a45',
           direction: 'incoming',
           to: 'example.red.alice',
-          amount: '1000',
+          amount: '1234', // ledger units, so that's 12.34 USD
           expiresAt: (new Date((new Date()).getTime() + 1000)).toISOString()
         }
       }
@@ -56,12 +56,12 @@ describe('PluginBellsFactory', function () {
         ledger: 'http://red.example',
         debits: [{
           account: 'http://red.example/accounts/mike',
-          amount: '10',
+          amount: '12.34',
           authorized: true
         }],
         credits: [{
           account: 'http://red.example/accounts/alice',
-          amount: '10'
+          amount: '12.34'
         }],
         expires_at: this.transfer.current.expiresAt
       }
@@ -71,11 +71,11 @@ describe('PluginBellsFactory', function () {
         ledger: 'http://red.example',
         debits: [{
           account: 'http://red.example/accounts/alice',
-          amount: '10'
+          amount: '12.34'
         }],
         credits: [{
           account: 'http://red.example/accounts/mike',
-          amount: '10'
+          amount: '12.34'
         }],
         state: 'executed'
       }
@@ -401,7 +401,7 @@ describe('PluginBellsFactory', function () {
 
         it(`sends a ${format}-format transfer with the correct fields`, function * () {
           nock('http://red.example')
-            .put('/transfers/' + this.transfer.current.id, this.fiveBellsTransferAlice)
+            .put('/transfers/' + this.transfer[format].id, this.fiveBellsTransferAlice)
             .basicAuth({user: 'admin', pass: 'admin'})
             .reply(200)
 
@@ -538,7 +538,7 @@ describe('PluginBellsFactory', function () {
           id: 'ac518dfb-b8a6-49ef-b78d-5e26e81d7a45',
           direction: 'incoming',
           to: 'example.red.alice',
-          amount: '1000',
+          amount: '12.34',
           expiresAt: (new Date((new Date()).getTime() + 1000)).toISOString()
         }
       }

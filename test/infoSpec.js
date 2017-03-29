@@ -57,14 +57,12 @@ describe('Info methods', function () {
   })
 
   describe('getInfo', function () {
-    it('gets the precision and scale', function () {
+    it('gets the currencyCode and currencyScale', function () {
       const info = {
         prefix: 'example.red.',
         connectors: ['example.red.mark'],
         currencyCode: 'USD',
-        currencySymbol: '$',
-        precision: 10,
-        scale: 2
+        currencyScale: 2
       }
       assert.deepEqual(this.plugin.getInfo(), info)
     })
