@@ -20,6 +20,8 @@ const util = require('util')
 const backoffMin = 1000
 const backoffMax = 30000
 const defaultConnectTimeout = 60000
+const wsReconnectDelayMin = 1
+const wsReconnectDelayMax = 300
 
 function wait (ms) {
   if (ms === Infinity) {
@@ -261,7 +263,14 @@ class FiveBellsLedger extends EventEmitter2 {
       // open a websocket connection to the websockets notification URL,
       // and wait for a "connect" RPC message on it.
       new Promise((resolve, reject) => {
-        this.connection = reconnect({immediate: true}, (ws) => {
+        this.connection = reconnect({
+          // note: the immediate option controls the initial connection, not reconnection
+          immediate: true,
+          // reconnect ASAP and don't stop trying
+          failAfter: Infinity,
+          initialDelay: wsReconnectDelayMin,
+          maxDelay: wsReconnectDelayMax
+        }, (ws) => {
           ws.on('open', () => {
             debug('ws connected to ' + notificationsUrl)
           })
@@ -276,10 +285,18 @@ class FiveBellsLedger extends EventEmitter2 {
 
             if (rpcMessage.method === 'connect') {
               if (!this.connected) {
-                this.emit('connect')
-                this.connected = true
+                // Re-subscribe to our account activity in case the ledger forgot us
+                // and only then emit 'connect' and resolve the promise
+                return this._subscribeAccounts([this.account])
+                  .catch(reject)
+                  .then(() => {
+                    this.emit('connect')
+                    this.connected = true
+                    return resolve(null)
+                  })
+              } else {
+                return resolve(null)
               }
-              return resolve(null)
             }
             co.wrap(this._handleIncomingRpcMessage)
               .call(this, rpcMessage)
@@ -321,10 +338,20 @@ class FiveBellsLedger extends EventEmitter2 {
           .on('connect', (ws) => {
             this.ws = ws
           })
-          .on('disconnect', () => {
+          .on('disconnect', (err) => {
+            // Note this will be called any time the ws disconnects,
+            // including when reconnect-core will reconnect
+            debug('ws disconnected from ' + notificationsUrl)
+            if (err) {
+              debug('ws disconnected because of error:', (err && err.data || err))
+            }
             this.connected = false
+            this.ws.removeAllListeners()
             this.emit('disconnect')
             this.ws = null
+          })
+          .on('reconnect', (n, delay) => {
+            debug('ws will reconnect to ' + notificationsUrl + ' in: ' + delay + 'ms (reconnection number ' + n + ')')
           })
           .on('error', (err) => {
             debug('ws error on ' + notificationsUrl + ':', err)
@@ -335,7 +362,6 @@ class FiveBellsLedger extends EventEmitter2 {
     ])
 
     return connectTimeoutRace
-      .then(() => this._subscribeAccounts([this.account]))
   }
 
   disconnect () {
@@ -677,7 +703,13 @@ class FiveBellsLedger extends EventEmitter2 {
       this.on('_rpc:response', listener)
       const rpcMessage = JSON.stringify({ jsonrpc: '2.0', id: requestId, method, params })
       debug('sending RPC message', rpcMessage)
-      this.ws.send(rpcMessage)
+      // If sending rejects we can reject immediately
+      this.ws.send(rpcMessage, (err) => {
+        if (err) {
+          debug('ws error sending rpc request:', err)
+          return reject(err)
+        }
+      })
     })
   }
 
