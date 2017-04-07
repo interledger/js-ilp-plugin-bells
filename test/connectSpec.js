@@ -58,6 +58,9 @@ describe('Connection methods', function () {
     })
 
     it('retries if account gives 500', function * () {
+      const clock = sinon.useFakeTimers('setTimeout')
+      // run the clock extra fast
+      const clockInterval = setInterval(() => clock.tick(1000), 1)
       nock('http://red.example')
         .get('/accounts/mike')
         .reply(500)
@@ -75,6 +78,8 @@ describe('Connection methods', function () {
 
       yield assert.isFulfilled(this.plugin.connect(), null, 'should be fulfilled with null')
       assert.isTrue(this.plugin.isConnected())
+      clearInterval(clockInterval)
+      clock.restore()
     })
 
     it('should reject if sending the subscription request fails', function * () {
