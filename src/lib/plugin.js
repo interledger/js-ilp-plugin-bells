@@ -139,10 +139,17 @@ class FiveBellsLedger extends EventEmitter2 {
       errorMessage: 'Unable to connect to account',
       timeout: options.timeout,
       backoffMin: accountBackoffMin,
-      backoffMax: accountBackoffMax
+      backoffMax: accountBackoffMax,
+      // keep trying even if the account doesn't exist initially
+      // this is mainly for the cases in which a connector starts
+      // after the ledger (such that it will initially get a 404
+      // error trying to connect to its account)
+      // P.S. by setting the timeout to Infinity you're already
+      // asking it to do something kind of crazy.
+      forceRetry: options.timeout === Infinity
     })
 
-    if (!res.body.ledger) {
+    if (!res.body || !res.body.ledger) {
       throw new Error('Failed to fetch account details from "' +
         accountUri +
         '". Got: "' +
@@ -774,12 +781,13 @@ function * requestRetry (requestOptions, retryOptions) {
     debug('connecting to account ' + requestOptions.uri)
     try {
       const res = yield request(requestOptions)
-      if (res.statusCode >= 400 && res.statusCode < 500) {
+      if (retryOptions.forceRetry && res.statusCode >= 400) {
+        throw new Error(requestOptions.uri + ' failed with status code ' + res.statusCode)
+      } else if (res.statusCode >= 400 && res.statusCode < 500) {
+        // normally, don't retry 4xx level errors
         break
       } else if (res.statusCode >= 500) {
-        throw new Error(requestOptions.uri +
-          ' failed with status code ' +
-          res.statusCode)
+        throw new Error(requestOptions.uri + ' failed with status code ' + res.statusCode)
       }
       return res
     } catch (err) {
@@ -787,11 +795,11 @@ function * requestRetry (requestOptions, retryOptions) {
       if (Date.now() + delay - start > timeout) {
         throw new Error(retryOptions.errorMessage + ': timeout')
       }
-      debug('http request failed: ' + err.message + '; retrying')
+      debug('http request to failed: ' + err.message + '; retrying in ' + delay + 'ms')
       yield wait(delay)
     }
   }
-  debug('http request failed. aborting.')
+  debug('http request failed. aborting. (uri: ' + requestOptions.uri + ')')
   throw new Error(retryOptions.errorMessage)
 }
 

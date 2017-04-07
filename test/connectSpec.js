@@ -82,6 +82,33 @@ describe('Connection methods', function () {
       clock.restore()
     })
 
+    it('retries querying the account forever if the timeout is Infinity, even if gets a 4xx error', function * () {
+      const clock = sinon.useFakeTimers('setTimeout')
+      // run the clock extra fast
+      const clockInterval = setInterval(() => clock.tick(30000), 1)
+      nock('http://red.example')
+        .get('/accounts/mike')
+        // we could run it more times, but you get the idea
+        .times(25)
+        .reply(404)
+        .get('/accounts/mike')
+        .reply(200, {
+          ledger: 'http://red.example',
+          name: 'mike'
+        })
+      nock('http://red.example')
+        .get('/')
+        .reply(200, this.infoRedLedger)
+      nock('http://red.example')
+        .get('/auth_token')
+        .reply(200, {token: 'abc'})
+
+      yield assert.isFulfilled(this.plugin.connect({ timeout: Infinity }), null, 'should be fulfilled with null')
+      assert.isTrue(this.plugin.isConnected())
+      clearInterval(clockInterval)
+      clock.restore()
+    })
+
     it('should reject if sending the subscription request fails', function * () {
       nock('http://red.example')
         .get('/accounts/mike')
