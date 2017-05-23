@@ -65,7 +65,7 @@
     "co-request": "^1.0.0",
     "debug": "^2.2.0",
     "eventemitter2": "^2.2.2",
-    "five-bells-shared": "https://github.com/interledgerjs/five-bells-shared#mj-test-dj-ilqp",
+    "five-bells-shared": "interledgerjs/five-bells-shared#dj-ilqp",
     "ilp-packet": "~1.2.0",
     "lodash": "^4.13.1",
     "reconnect-core": "^1.2.0",
