@@ -83,8 +83,9 @@ describe('PluginBellsFactory', function () {
       this.fiveBellsMessage = cloneDeep(require('./data/message.json'))
       this.message = {
         ledger: 'example.red.',
-        account: 'example.red.alice',
-        data: {foo: 'bar'}
+        to: 'example.red.alice',
+        ilp: Buffer.from('hello').toString('base64'),
+        custom: {foo: 'bar'}
       }
 
       this.factory = new PluginBellsFactory({
@@ -360,10 +361,11 @@ describe('PluginBellsFactory', function () {
           params: {
             event: 'message.send',
             resource: {
+              id: '6a13abf0-2333-4d1e-9afc-5bf32c6dc0dd',
               ledger: 'http://red.example',
               to: 'http://red.example/accounts/mike',
               from: 'http://red.example/accounts/alice',
-              data: {}
+              custom: {}
             },
             related_resources: {}
           }
@@ -371,34 +373,32 @@ describe('PluginBellsFactory', function () {
 
         yield handled
       })
+
+      it('send a message as the correct username', function * () {
+        nock('http://red.example')
+          .post('/messages', {
+            from: 'http://red.example/accounts/mike',
+            to: 'http://red.example/accounts/alice',
+            ledger: 'http://red.example',
+            custom: { foo: 'bar' }
+          })
+          .basicAuth({user: 'admin', pass: 'admin'})
+          .reply(200)
+
+        setTimeout(() => {
+          this.plugin.emit('incoming_message', {}, '123')
+        }, 10)
+
+        yield this.plugin.sendRequest({
+          id: '123',
+          ledger: 'example.red.',
+          to: 'example.red.alice',
+          custom: { foo: 'bar' }
+        })
+      })
+
       const formats = ['legacy', 'current']
       formats.map(format => {
-        it(`send a ${format}-format message as the correct username`, function * () {
-          nock('http://red.example')
-            .post('/messages', {
-              from: 'http://red.example/accounts/mike',
-              to: 'http://red.example/accounts/alice',
-              ledger: 'http://red.example',
-              data: { foo: 'bar' }
-            })
-            .basicAuth({user: 'admin', pass: 'admin'})
-            .reply(200)
-
-          const msg = {
-            legacy: {
-              ledger: 'example.red.',
-              account: 'example.red.alice',
-              data: { foo: 'bar' }
-            },
-            current: {
-              ledger: 'example.red.',
-              to: 'example.red.alice',
-              data: { foo: 'bar' }
-            }
-          }
-          yield this.plugin.sendMessage(msg[format])
-        })
-
         it(`sends a ${format}-format transfer with the correct fields`, function * () {
           nock('http://red.example')
             .put('/transfers/' + this.transfer[format].id, this.fiveBellsTransferAlice)
@@ -578,8 +578,9 @@ describe('PluginBellsFactory', function () {
       this.fiveBellsMessage = cloneDeep(require('./data/message.json'))
       this.message = {
         ledger: 'example.red.',
-        account: 'example.red.alice',
-        data: {foo: 'bar'}
+        to: 'example.red.alice',
+        ilp: Buffer.from('hello').toString('base64'),
+        custom: {foo: 'bar'}
       }
 
       this.factory = new PluginBellsFactory({
@@ -699,10 +700,11 @@ describe('PluginBellsFactory', function () {
           params: {
             event: 'message.send',
             resource: {
+              id: '6a13abf0-2333-4d1e-9afc-5bf32c6dc0dd',
               ledger: 'http://red.example',
               to: 'http://red.example/accounts/mike',
               from: 'http://red.example/accounts/alice',
-              data: {}
+              custom: {}
             },
             related_resources: {}
           }
@@ -723,10 +725,11 @@ describe('PluginBellsFactory', function () {
           params: {
             event: 'message.send',
             resource: {
+              id: '6a13abf0-2333-4d1e-9afc-5bf32c6dc0dd',
               ledger: 'http://red.example',
               to: 'http://red.example/accounts/mike',
               from: 'http://red.example/accounts/alice',
-              data: {}
+              custom: {}
             },
             related_resources: {}
           }

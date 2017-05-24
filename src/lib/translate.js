@@ -122,7 +122,7 @@ const translateBellsToPluginApi = (notification, account, ledgerContext) => {
       ledgerContext
     )
   } else if (event === 'message.send') {
-    debug('notify message', data.account)
+    debug('notify message', data.from)
     return translateMessageNotification(data, account, ledgerContext)
   } else {
     throw new UnrelatedNotificationError('Invalid notification event: ' + event)
@@ -283,11 +283,12 @@ const translateMessageNotification = (message, account, ledgerContext) => {
     'incoming_message',
     {
       ledger: ledgerContext.prefix,
-      account: ledgerContext.prefix + ledgerContext.accountUriToName(message.from),
       from: ledgerContext.prefix + ledgerContext.accountUriToName(message.from),
       to: ledgerContext.prefix + ledgerContext.accountUriToName(message.to),
-      data: message.data
-    }
+      ilp: message.ilp,
+      custom: message.custom
+    },
+    message.id
   ]
 }
 

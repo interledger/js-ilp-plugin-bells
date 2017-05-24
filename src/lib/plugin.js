@@ -6,6 +6,8 @@ const request = require('co-request')
 const WebSocket = require('ws')
 const reconnectCore = require('reconnect-core')
 const BigNumber = require('bignumber.js')
+const uuid = require('uuid/v4')
+const IlpPacket = require('ilp-packet')
 const debug = require('debug')('ilp-plugin-bells:plugin')
 const errors = require('../errors')
 const ExternalError = require('../errors/external-error')
@@ -22,6 +24,7 @@ const accountBackoffMax = 30000
 const defaultConnectTimeout = 60000
 const wsReconnectDelayMin = 10
 const wsReconnectDelayMax = 500
+const defaultMessageTimeout = 5000
 
 class FiveBellsLedger extends EventEmitter2 {
   constructor (options) {
@@ -73,6 +76,10 @@ class FiveBellsLedger extends EventEmitter2 {
     // `connected` is set while a websocket connection is active.
     this.connected = false
     this.ws = null
+    this.pendingRequests = {} // { messageId ⇒ TODO
+    this.requestHandler = null
+    this.on('incoming_message', (message, messageId) =>
+      co.wrap(this._handleIncomingMessage).call(this, message, messageId))
     this.on('_rpc:notification', (notif) =>
       co.wrap(this._handleNotification).call(this, notif))
   }
@@ -388,65 +395,143 @@ class FiveBellsLedger extends EventEmitter2 {
   }
 
   /**
-   * @param {Object} message
-   * @param {IlpAddress} message.to
-   * @param {IlpAddress} message.ledger
-   * @param {Object} message.data
-   * @param {Object} message.custom (optional)
-   * @returns {Promise.<null>}
+   * @param {Function} requestHandler
    */
-  sendMessage (message) {
-    return co.wrap(this._sendMessage).call(this, message)
+  registerRequestHandler (requestHandler) {
+    if (this.requestHandler) {
+      throw new errors.RequestHandlerAlreadyRegisteredError('Cannot overwrite requestHandler')
+    }
+    this.requestHandler = requestHandler
   }
 
-  * _sendMessage (paramMessage) {
+  deregisterRequestHandler () {
+    this.requestHandler = null
+  }
+
+  * _handleIncomingMessage (message, messageId) {
+    const pendingRequest = this.pendingRequests[messageId]
+    // `message` is a ResponseMessage
+    if (pendingRequest) {
+      delete this.pendingRequests[messageId]
+      yield this.emitAsync('incoming_response', message)
+      pendingRequest.resolve(message)
+      return
+    }
+    // `message` is a RequestMessage
+    yield this.emitAsync('incoming_request', message)
+    if (!this.requestHandler) return
+    const responseMessage = yield this.requestHandler(message).then((responseMessage) => {
+      if (!responseMessage) {
+        throw new Error('No matching handler for request')
+      }
+      return responseMessage
+    }).catch((err) => {
+      return {
+        ledger: message.ledger,
+        from: message.to,
+        to: message.from,
+        ilp: IlpPacket.serializeIlpError({
+          code: 'F00',
+          name: 'Bad Request',
+          triggeredBy: this.getAccount(),
+          forwardedBy: [],
+          triggeredAt: new Date(),
+          data: JSON.stringify({message: err.message})
+        }).toString('base64')
+      }
+    })
+    yield this.emitAsync('outgoing_response', responseMessage)
+    return yield this._sendMessage(Object.assign({id: messageId}, responseMessage))
+  }
+
+  /**
+   * @param {RequestMessage} message
+   * @param {IlpAddress} message.to
+   * @param {IlpAddress} message.ledger
+   * @param {String} [message.ilp]
+   * @param {Object} [message.custom]
+   * @param {Integer} [message.timeout] milliseconds
+   * @param {Uuid} [message.id]
+   * @returns {Promise.<ResponseMessage>}
+   */
+  sendRequest (message) {
+    return co.wrap(this._sendRequest).call(this, message)
+  }
+
+  * _sendRequest (message) {
+    const requestId = message.id || uuid()
+    const responded = new Promise((resolve, reject) => {
+      this.pendingRequests[requestId] = {resolve, reject}
+      this._sendMessage(Object.assign({id: requestId}, message)).catch((err) => {
+        delete this.pendingRequests[requestId]
+        reject(err)
+      })
+    })
+
+    yield this.emitAsync('outgoing_request', message)
+    return yield Promise.race([
+      responded,
+      wait(message.timeout || defaultMessageTimeout)
+        .then(() => {
+          delete this.pendingRequests[requestId]
+          throw new Error('sendRequest timed out')
+        })
+    ])
+  }
+
+  _sendMessage (paramMessage) {
     // clone the incoming object in case we want to correct its fields
     const message = Object.assign({}, paramMessage)
     debug('sending message: ' + JSON.stringify(message))
     if (!this.ready) {
-      throw new Error('Must be connected before sendMessage can be called')
+      throw new Error('Must be connected before sendRequest can be called')
     }
     if (message.ledger !== this.ledgerContext.prefix) {
       throw new errors.InvalidFieldsError('invalid ledger')
     }
     if (typeof message.to !== 'string') {
-      // check for deprecated Message format, from before https://github.com/interledger/rfcs/commit/61958f54c268e5a52e1b85f090df02646b0dda38
-      if (typeof message.account === 'string') {
-        util.deprecate(() => {}, 'switch from using "account" to "to"')()
-        message.to = message.account
-        delete message.account
-      } else {
-        throw new errors.InvalidFieldsError('invalid to field')
-      }
+      throw new errors.InvalidFieldsError('invalid to field')
     }
-    if (typeof message.data !== 'object') {
-      throw new errors.InvalidFieldsError('invalid data')
+    if (typeof message.id !== 'string') {
+      throw new errors.InvalidFieldsError('invalid id field')
+    }
+    if (message.ilp !== undefined && typeof message.ilp !== 'string') {
+      throw new errors.InvalidFieldsError('invalid ilp field')
+    }
+    if (message.custom !== undefined && typeof message.custom !== 'object') {
+      throw new errors.InvalidFieldsError('invalid custom field')
     }
 
     const destinationAddress = this.ledgerContext.parseAddress(message.to)
     const fiveBellsMessage = {
+      id: message.id,
       ledger: this.ledgerContext.host,
       from: this.ledgerContext.urls.account.replace(':name', encodeURIComponent(this.username)),
       to: this.ledgerContext.urls.account.replace(':name', encodeURIComponent(destinationAddress.username)),
-      data: message.data
+      ilp: message.ilp,
+      custom: message.custom
     }
     debug('converted to ledger message: ' + JSON.stringify(fiveBellsMessage))
 
-    const sendRes = yield request(Object.assign(
-      requestCredentials(this.credentials), {
-        method: 'post',
-        uri: this.ledgerContext.urls.message,
-        body: fiveBellsMessage,
-        json: true
-      }))
-    const body = sendRes.body
-    if (sendRes.statusCode >= 400) {
+    return co(function * () {
+      const sendRes = yield request(Object.assign(
+        requestCredentials(this.credentials), {
+          method: 'post',
+          uri: this.ledgerContext.urls.message,
+          body: fiveBellsMessage,
+          json: true
+        }))
+      const body = sendRes.body
+      if (sendRes.statusCode < 400) return
       debug('error submitting message:', sendRes.statusCode, JSON.stringify(sendRes.body))
-      if (body.id === 'InvalidBodyError') throw new errors.InvalidFieldsError(body.message)
-      if (body.id === 'NoSubscriptionsError') throw new errors.NoSubscriptionsError(body.message)
-      throw new errors.NotAcceptedError(body.message)
-    }
-    return null
+      if (body.id === 'InvalidBodyError') {
+        throw new errors.InvalidFieldsError(body.message)
+      } else if (body.id === 'NoSubscriptionsError') {
+        throw new errors.NoSubscriptionsError(body.message)
+      } else {
+        throw new errors.NotAcceptedError(body.message)
+      }
+    }.bind(this))
   }
 
   sendTransfer (transfer) {

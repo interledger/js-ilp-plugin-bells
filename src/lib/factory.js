@@ -91,9 +91,6 @@ class PluginFactory extends EventEmitter2 {
     } else if (notification.event === 'message.send') {
       // add receiver
       accounts.push(notification.resource.to)
-
-      // add the sender
-      accounts.push(notification.resource.from)
     }
 
     // for every account in the notification, call that plugin's notification

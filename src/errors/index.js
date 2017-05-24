@@ -63,6 +63,13 @@ class NoSubscriptionsError extends Error {
   }
 }
 
+class RequestHandlerAlreadyRegisteredError extends Error {
+  constructor (message) {
+    super(message)
+    this.name = 'RequestHandlerAlreadyRegisteredError'
+  }
+}
+
 module.exports = {
   AlreadyFulfilledError,
   AlreadyRolledBackError,
@@ -71,6 +78,7 @@ module.exports = {
   MissingFulfillmentError,
   NoSubscriptionsError,
   NotAcceptedError,
+  RequestHandlerAlreadyRegisteredError,
   TransferNotConditionalError,
   TransferNotFoundError
 }
