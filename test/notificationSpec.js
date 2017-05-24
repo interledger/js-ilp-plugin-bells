@@ -16,7 +16,7 @@ const cloneDeep = require('lodash/cloneDeep')
 mock('ws', wsHelper.WebSocket)
 const PluginBells = require('..')
 
-describe('Notification handling', function () {
+describe.skip('Notification handling', function () {
   beforeEach(function * () {
     this.plugin = new PluginBells({
       prefix: 'example.red.',

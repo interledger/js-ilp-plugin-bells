@@ -766,7 +766,7 @@ describe('Connection methods', function () {
       }, 'Expected options.timeout to be a number, received: string')
     })
 
-    describe('websocket reconnection', function () {
+    describe.skip('websocket reconnection', function () {
       beforeEach(function * () {
         nock('http://red.example')
           .get('/accounts/mike')
