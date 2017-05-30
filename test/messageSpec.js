@@ -59,7 +59,7 @@ describe('Messaging', function () {
       .get('/')
       .reply(200, this.infoRedLedger)
 
-    this.wsRedLedger = wsHelper.makeServer('ws://red.example/websocket?token=abc')
+    this.wsRedLedger = wsHelper.makeServer('ws://red.example/websocket')
 
     yield this.plugin.connect()
     this.clock = sinon.useFakeTimers(START_DATE, 'Date')
@@ -75,7 +75,7 @@ describe('Messaging', function () {
     it('submits a message and returns the response', function * () {
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       setTimeout(() => {
@@ -89,7 +89,7 @@ describe('Messaging', function () {
     it('ignores a message with the wrong id', function * () {
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       setTimeout(() => {
@@ -121,6 +121,7 @@ describe('Messaging', function () {
         }))
       const messageNock = nock('http://red.example')
         .post('/other/place/to/submit/messages')
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
       const plugin = new PluginBells({
         prefix: 'example.red.',
@@ -192,7 +193,7 @@ describe('Messaging', function () {
     it('throws an InvalidFieldsError on InvalidBodyError', function (done) {
       nock('http://red.example')
         .post('/messages')
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(400, {id: 'InvalidBodyError', message: 'fail'})
 
       this.plugin.sendRequest(this.message)
@@ -202,7 +203,7 @@ describe('Messaging', function () {
     it('throws a NoSubscriptionsError', function (done) {
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(422, {id: 'NoSubscriptionsError', message: 'fail'})
 
       this.plugin.sendRequest(this.message)
@@ -212,7 +213,7 @@ describe('Messaging', function () {
     it('throws an NotAcceptedError on 400', function (done) {
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(400, {id: 'SomeError', message: 'fail'})
 
       this.plugin.sendRequest(this.message)
@@ -232,7 +233,7 @@ describe('Messaging', function () {
     it('times out if no response is returned', function (done) {
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
       this.plugin.sendRequest(Object.assign({timeout: 10}, this.message))
         .should.be.rejectedWith(Error, 'sendRequest timed out').notify(done)
@@ -261,7 +262,7 @@ describe('Messaging', function () {
     it('relays response messages to the ledger', function * () {
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       this.plugin.registerRequestHandler((requestMessage) => {
@@ -288,7 +289,7 @@ describe('Messaging', function () {
           })
           return true
         })
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       this.plugin.registerRequestHandler((requestMessage) => {
@@ -311,7 +312,7 @@ describe('Messaging', function () {
           })
           return true
         })
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       this.plugin.registerRequestHandler((requestMessage) => {
@@ -337,7 +338,7 @@ describe('Messaging', function () {
       this.plugin.on('outgoing_request', this.stubOutgoingRequest)
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       setTimeout(() => {
@@ -353,7 +354,7 @@ describe('Messaging', function () {
       this.plugin.on('outgoing_response', this.stubOutgoingResponse)
       nock('http://red.example')
         .post('/messages', this.ledgerMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
 
       this.plugin.registerRequestHandler((requestMessage) => {

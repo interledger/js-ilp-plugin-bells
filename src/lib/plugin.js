@@ -64,6 +64,7 @@ class FiveBellsLedger extends EventEmitter2 {
       key: options.key,
       ca: options.ca
     }
+    this.authToken = options.authToken || null
     this.connector = options.connector || null
 
     this.debugReplyNotifications = options.debugReplyNotifications || false
@@ -119,6 +120,7 @@ class FiveBellsLedger extends EventEmitter2 {
       })
     }
     this.connecting = true
+    this.authToken = null
 
     if (this.identifier) {
       const newOptions = yield resolveWebfingerOptions(this.identifier)
@@ -187,12 +189,11 @@ class FiveBellsLedger extends EventEmitter2 {
     }
     this.ready = true
 
-    const authToken = yield this._getAuthToken()
-    if (!authToken) throw new Error('Unable to get auth token from ledger')
-    const notificationsUrl = this.ledgerContext.urls.websocket + '?token=' + encodeURIComponent(authToken)
+    this.authToken = yield this._getAuthToken()
+    if (!this.authToken) throw new Error('Unable to get auth token from ledger')
     yield this._connectToWebsocket({
       timeout: options.timeout,
-      uri: notificationsUrl
+      uri: this.ledgerContext.urls.websocket
     })
   }
 
@@ -208,7 +209,11 @@ class FiveBellsLedger extends EventEmitter2 {
     }
 
     const reconnect = reconnectCore(() => {
-      return new WebSocket(wsUri)
+      return new WebSocket(wsUri, null, {
+        headers: {
+          authorization: 'Bearer ' + this.authToken
+        }
+      })
     })
 
     // reject if the timeout occurs before the websocket is successfully established
@@ -384,7 +389,7 @@ class FiveBellsLedger extends EventEmitter2 {
         method: 'get',
         uri: creds.account,
         json: true
-      }, requestCredentials(creds)))
+      }, requestCredentials(creds, this.authToken)))
     } catch (e) { }
     if (!res || res.statusCode !== 200) {
       throw new ExternalError('Unable to determine current balance')
@@ -515,7 +520,7 @@ class FiveBellsLedger extends EventEmitter2 {
 
     return co(function * () {
       const sendRes = yield request(Object.assign(
-        requestCredentials(this.credentials), {
+        requestCredentials(this.credentials, this.authToken), {
           method: 'post',
           uri: this.ledgerContext.urls.message,
           body: fiveBellsMessage,
@@ -586,7 +591,7 @@ class FiveBellsLedger extends EventEmitter2 {
     debug('submitting transfer: ', JSON.stringify(fiveBellsTransfer))
 
     const sendRes = yield request(Object.assign(
-      requestCredentials(this.credentials), {
+      requestCredentials(this.credentials, this.authToken), {
         method: 'put',
         uri: fiveBellsTransfer.id,
         body: fiveBellsTransfer,
@@ -614,7 +619,7 @@ class FiveBellsLedger extends EventEmitter2 {
       throw new Error('Must be connected before fulfillCondition can be called')
     }
     const fulfillmentRes = yield request(Object.assign(
-      requestCredentials(this.credentials), {
+      requestCredentials(this.credentials, this.authToken), {
         method: 'put',
         uri: this.ledgerContext.urls.transfer_fulfillment.replace(':id', transferId),
         body: translate.translateToCryptoFulfillment(conditionFulfillment),
@@ -669,7 +674,7 @@ class FiveBellsLedger extends EventEmitter2 {
         headers: {
           'Accept': '*/*'
         }
-      }, requestCredentials(this.credentials)))
+      }, requestCredentials(this.credentials, this.authToken)))
     } catch (err) {
       throw new ExternalError('Remote error: message=' + err.message)
     }
@@ -700,7 +705,7 @@ class FiveBellsLedger extends EventEmitter2 {
       throw new Error('Must be connected before rejectIncomingTransfer can be called')
     }
     const rejectionRes = yield request(Object.assign(
-      requestCredentials(this.credentials), {
+      requestCredentials(this.credentials, this.authToken), {
         method: 'put',
         uri: this.ledgerContext.urls.transfer_rejection.replace(':id', transferId),
         body: rejectionMessage,
@@ -797,12 +802,14 @@ class FiveBellsLedger extends EventEmitter2 {
   }
 }
 
-function requestCredentials (credentials) {
+function requestCredentials (credentials, token) {
   return omitNil({
-    auth: credentials.username && credentials.password && {
+    auth: Object.assign({
+      bearer: token
+    }, credentials.username && credentials.password && {
       user: credentials.username,
       pass: credentials.password
-    },
+    }),
     cert: credentials.cert,
     key: credentials.key,
     ca: credentials.ca

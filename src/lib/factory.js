@@ -161,8 +161,7 @@ class PluginFactory extends EventEmitter2 {
     // make sure that the account exists
     const exists = yield request(account, {
       auth: {
-        username: this.adminUsername,
-        password: this.adminPassword
+        bearer: this.adminPlugin.authToken
       }
     })
 
@@ -182,7 +181,8 @@ class PluginFactory extends EventEmitter2 {
         username: this.adminUsername,
         password: this.adminPassword,
         account: this.adminAccount
-      }
+      },
+      authToken: this.adminPlugin.authToken
     })
 
     // 'connects' the plugin without really connecting it

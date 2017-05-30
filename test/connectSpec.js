@@ -28,7 +28,7 @@ describe('Connection methods', function () {
       password: 'mike'
     })
 
-    this.wsRedLedger = wsHelper.makeServer('ws://red.example/websocket?token=abc')
+    this.wsRedLedger = wsHelper.makeServer('ws://red.example/websocket')
     this.infoRedLedger = cloneDeep(require('./data/infoRedLedger.json'))
   })
 
@@ -148,7 +148,7 @@ describe('Connection methods', function () {
       this.wsRedLedger.stop()
       // Unclear why but if this test overwrites this.wsRedLedger
       // it causes other tests to fail
-      const wsRedLedger = new mockSocket.Server('ws://red.example/websocket?token=abc')
+      const wsRedLedger = new mockSocket.Server('ws://red.example/websocket')
       yield this.plugin.connect({ timeout: 10 }).should.be.rejectedWith(Error, /timed out before "connect"/)
       wsRedLedger.stop()
     })
@@ -170,7 +170,7 @@ describe('Connection methods', function () {
       this.wsRedLedger.stop()
       // Unclear why but if this test overwrites this.wsRedLedger
       // it causes other tests to fail
-      const wsRedLedger = new mockSocket.Server('ws://red.example/websocket?token=abc')
+      const wsRedLedger = new mockSocket.Server('ws://red.example/websocket')
       wsRedLedger.on('connection', () => {
         wsRedLedger.send(JSON.stringify({
           jsonrpc: '2.0',
@@ -699,7 +699,7 @@ describe('Connection methods', function () {
           name: 'mike'
         })
       let usedCorrectWsUrl = false
-      const wsRedLedger = wsHelper.makeServer('ws://somewhererandom.example/notifications/mike?token=abc')
+      const wsRedLedger = wsHelper.makeServer('ws://somewhererandom.example/notifications/mike')
       wsRedLedger.on('connection', () => {
         usedCorrectWsUrl = true
       })
@@ -793,7 +793,7 @@ describe('Connection methods', function () {
           setTimeout(() => {
             assert.equal(this.plugin.isConnected(), true)
             resolve()
-          }, 20)
+          }, 30)
         })
       })
 

@@ -29,7 +29,7 @@ describe('Notification handling', function () {
       }
     })
 
-    this.wsRedLedger = wsHelper.makeServer('ws://red.example/websocket?token=abc')
+    this.wsRedLedger = wsHelper.makeServer('ws://red.example/websocket')
     this.infoRedLedger = cloneDeep(require('./data/infoRedLedger.json'))
 
     const nockAccount = nock('http://red.example')
@@ -50,6 +50,12 @@ describe('Notification handling', function () {
       .reply(200, {token: 'abc'})
 
     yield this.plugin.connect()
+    // wait until the plugin and ledger are done establishing a websocket connection
+    yield new Promise((resolve) => {
+      this.wsRedLedger.on('message', function (message) {
+        resolve()
+      })
+    })
 
     nockAccount.done()
     nockInfo.done()
@@ -123,6 +129,7 @@ describe('Notification handling', function () {
 
   describe('unrelated notifications', function () {
     it('emits an UnrelatedNotificationError for an unrelated transfer', function (done) {
+      // yield new Promise((resolve) => setTimeout(resolve, 100))
       this.wsRedLedger.on('message', function (message) {
         assert.deepEqual(JSON.parse(message), {
           result: 'ignored',
@@ -568,7 +575,7 @@ describe('Notification handling', function () {
     it('emits "incoming_response"', function * () {
       nock('http://red.example')
         .post('/messages', this.fiveBellsMessage)
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200)
       const requestMessage = Object.assign({id: this.fiveBellsMessage.id}, this.message)
       const responseMessage = Object.assign({}, this.message, {custom: {response: true}})
