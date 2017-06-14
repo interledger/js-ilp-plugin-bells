@@ -174,7 +174,7 @@ describe('Info methods', function () {
           name: 'mike'
         })
 
-      this.wsRedLedger = wsHelper.makeServer('ws://blue.example/websocket?token=abc')
+      this.wsRedLedger = wsHelper.makeServer('ws://blue.example/websocket')
 
       yield plugin.connect()
       assert.equal(plugin.getInfo().prefix, 'example.blue.')
@@ -203,7 +203,7 @@ describe('Info methods', function () {
     it('returns the current balance', function * () {
       nock('http://red.example')
         .get('/accounts/mike')
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(200, {balance: '100.01'})
       yield assert.isFulfilled(this.plugin.getBalance(), '10001')
     })
@@ -211,7 +211,7 @@ describe('Info methods', function () {
     it('throws an ExternalError on 500', function () {
       nock('http://red.example')
         .get('/accounts/mike')
-        .basicAuth({user: 'mike', pass: 'mike'})
+        .matchHeader('authorization', 'Bearer abc')
         .reply(500)
       return assert.isRejected(this.plugin.getBalance(), /Unable to determine current balance/)
     })

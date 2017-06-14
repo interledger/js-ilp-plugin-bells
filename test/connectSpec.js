@@ -688,6 +688,50 @@ describe('Connection methods', function () {
       return assert.isRejected(this.plugin.connect(), Error, 'Unable to get auth token from ledger')
     })
 
+    describe('should request a new auth token when one expires', function () {
+      beforeEach(function * () {
+        nock('http://red.example')
+          .get('/accounts/mike')
+          .reply(200, {
+            ledger: 'http://red.example',
+            name: 'mike'
+          })
+        nock('http://red.example')
+          .get('/accounts/mike')
+          .matchHeader('authorization', 'Bearer def')
+          .reply(200, {balance: '100.01'})
+        nock('http://red.example')
+          .get('/')
+          .reply(200, this.infoRedLedger)
+      })
+
+      it('with the default max-age', function * () {
+        nock('http://red.example')
+          .get('/auth_token')
+          .reply(200, {token: 'abc'})
+          .get('/auth_token')
+          .reply(200, {token: 'def'})
+        yield assert.isFulfilled(this.plugin.connect(), null)
+        const clock = sinon.useFakeTimers(Date.now())
+        clock.tick(7 * 24 * 60 * 60 * 1000)
+        yield assert.isFulfilled(this.plugin.getBalance())
+        clock.restore()
+      })
+
+      it('with a custom max-age', function * () {
+        nock('http://red.example')
+          .get('/auth_token')
+          .reply(200, {token: 'abc', token_max_age: 10})
+          .get('/auth_token')
+          .reply(200, {token: 'def'})
+        yield assert.isFulfilled(this.plugin.connect(), null)
+        const clock = sinon.useFakeTimers(Date.now())
+        clock.tick(10)
+        yield assert.isFulfilled(this.plugin.getBalance())
+        clock.restore()
+      })
+    })
+
     it('should subscribe to notifications using the websocket websocket url', function * () {
       nock('http://red.example')
         .get('/auth_token')
@@ -793,7 +837,7 @@ describe('Connection methods', function () {
           setTimeout(() => {
             assert.equal(this.plugin.isConnected(), true)
             resolve()
-          }, 20)
+          }, 30)
         })
       })
 

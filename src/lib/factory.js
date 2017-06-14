@@ -162,8 +162,7 @@ class PluginFactory extends EventEmitter2 {
     // make sure that the account exists
     const exists = yield request(account, {
       auth: {
-        username: this.adminUsername,
-        password: this.adminPassword
+        bearer: yield this.adminPlugin._getAuthToken()
       }
     })
 
@@ -194,11 +193,12 @@ class PluginFactory extends EventEmitter2 {
     plugin.connect = function () { return Promise.resolve(null) }
     plugin.isConnected = () => this.isConnected()
 
+    plugin._getAuthToken = () => this.adminPlugin._getAuthToken()
     plugin.ledgerContext = this.ledgerContext
 
     this.plugins.set(username, plugin)
 
-    if (!this.glogbalSubscription) {
+    if (!this.globalSubscription) {
       yield this._subscribeAccounts()
     }
 
