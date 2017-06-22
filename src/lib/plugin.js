@@ -833,11 +833,8 @@ class FiveBellsLedger extends EventEmitter2 {
     if ((yield tryAuth({auth: {bearer: 'invalidToken'}})) === 403) {
       debug('Using Token Authentication')
       return 'token'
-    } else if ((yield tryAuth({auth: {user: '@#', pass: '@#'}})) === 403) {
-      debug('Using Basic Authentication')
-      return 'basic'
     } else {
-      throw new Error('Could not determine supported authentication mechanism.')
+      return 'basic'
     }
   }
 }
