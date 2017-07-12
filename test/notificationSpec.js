@@ -574,6 +574,23 @@ describe('Notification handling', function () {
       sinon.assert.calledWith(this.stubIncomingRequest, this.message)
     })
 
+    it('emits "incoming_request" with data instead of ilp', function * () {
+      const altMessage = cloneDeep(require('./data/message-with-data.json'))
+      this.wsRedLedger.send(JSON.stringify({
+        jsonrpc: '2.0',
+        id: null,
+        method: 'notify',
+        params: {
+          event: 'message.send',
+          resource: altMessage
+        }
+      }))
+
+      yield new Promise((resolve) => this.wsRedLedger.on('message', resolve))
+      sinon.assert.calledOnce(this.stubIncomingRequest)
+      sinon.assert.calledWith(this.stubIncomingRequest, this.message)
+    })
+
     it('emits "incoming_response"', function * () {
       nock('http://red.example')
         .post('/messages', this.fiveBellsMessage)

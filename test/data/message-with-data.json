@@ -1,0 +1,10 @@
+{
+  "ledger": "http://red.example",
+  "from": "http://red.example/accounts/mike",
+  "to": "http://red.example/accounts/alice",
+  "data": {
+    "ilp": "aGVsbG8=",
+    "id": "6a13abf0-2333-4d1e-9afc-5bf32c6dc0dd",
+    "custom": { "foo": "bar" }
+  }
+}

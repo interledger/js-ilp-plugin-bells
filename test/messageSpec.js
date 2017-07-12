@@ -44,7 +44,7 @@ describe('Messaging', function () {
       .reply(403)
 
     this.infoRedLedger = cloneDeep(require('./data/infoRedLedger.json'))
-    this.ledgerMessage = cloneDeep(require('./data/message.json'))
+    this.ledgerMessage = cloneDeep(require('./data/message-with-all.json'))
     this.message = {
       id: '6a13abf0-2333-4d1e-9afc-5bf32c6dc0dd',
       ledger: 'example.red.',

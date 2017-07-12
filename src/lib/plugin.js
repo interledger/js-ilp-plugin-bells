@@ -522,6 +522,7 @@ class FiveBellsLedger extends EventEmitter2 {
       from: this.ledgerContext.urls.account.replace(':name', encodeURIComponent(this.username)),
       to: this.ledgerContext.urls.account.replace(':name', encodeURIComponent(destinationAddress.username)),
       ilp: message.ilp,
+      data: { id: message.id, ilp: message.ilp, custom: message.custom },
       custom: message.custom
     }
     debug('converted to ledger message: ' + JSON.stringify(fiveBellsMessage))
