@@ -45,6 +45,7 @@ class FiveBellsLedger extends EventEmitter2 {
     }
 
     this.configPrefix = options.prefix
+    this.overrideInfo = options.overrideInfo
 
     this.account = options.account
     this.username = options.username
@@ -176,7 +177,7 @@ class FiveBellsLedger extends EventEmitter2 {
 
     // Resolve ledger metadata
     const ledgerMetadata = yield this._fetchLedgerMetadata(host)
-    this.ledgerContext = new LedgerContext(host, ledgerMetadata)
+    this.ledgerContext = new LedgerContext(host, ledgerMetadata, this.overrideInfo)
 
     // Set ILP prefix
     const ledgerPrefix = this.ledgerContext.prefix

@@ -73,6 +73,48 @@ describe('Info methods', function () {
       assert.deepEqual(this.plugin.getInfo(), info)
     })
 
+    it('allows the currencyCode and currencyScale to be configured', function * () {
+      nock('http://red.example')
+        .get('/accounts/mike')
+        .reply(200, {
+          ledger: 'http://red.example',
+          name: 'mike'
+        })
+
+      nock('http://red.example')
+        .get('/transfers/1')
+        .reply(403)
+
+      nock('http://red.example')
+        .get('/auth_token')
+        .reply(200, {token: 'abc'})
+
+      nock('http://red.example')
+        .get('/')
+        .reply(200, this.infoRedLedger)
+
+      const plugin = new PluginBells({
+        prefix: 'example.red.',
+        account: 'http://red.example/accounts/mike',
+        password: 'mike',
+        debugReplyNotifications: true,
+        debugAutofund: {
+          connector: 'http://mark.example',
+          admin: {username: 'adminuser', password: 'adminpass'}
+        },
+        overrideInfo: {
+          currency_code: 'XYZ',
+          scale: 99
+        }
+      })
+      yield plugin.connect()
+      const info = plugin.getInfo()
+      console.log(info)
+      assert.equal(info.currencyCode, 'XYZ')
+      assert.equal(info.currencyScale, 99)
+      yield plugin.disconnect()
+    })
+
     it('throws if not connected', function * () {
       const plugin = new PluginBells({
         account: 'http://red.example/accounts/mike',

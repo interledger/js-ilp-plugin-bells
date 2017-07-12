@@ -35,12 +35,17 @@ function parseAndValidateLedgerUrls (metadataUrls) {
 }
 
 class LedgerContext {
-  constructor (host, ledgerMetadata) {
+  constructor (host, ledgerMetadata, overrides) {
+    const metadata = Object.assign({}, ledgerMetadata, overrides || {})
+    if (overrides) {
+      debug('overriding fields from five bells ledger metadata with:', overrides)
+    }
+
     this.host = host
-    this.ledgerMetadata = ledgerMetadata
-    this.urls = parseAndValidateLedgerUrls(ledgerMetadata.urls)
+    this.ledgerMetadata = metadata
+    this.urls = parseAndValidateLedgerUrls(this.ledgerMetadata.urls)
     debug('using service urls:', this.urls)
-    this.prefix = ledgerMetadata.ilp_prefix
+    this.prefix = this.ledgerMetadata.ilp_prefix
   }
 
   getInfo () {
