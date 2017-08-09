@@ -217,6 +217,19 @@ describe('PluginBellsFactory', function () {
         }).catch(done)
       })
 
+      it('passes the admin plugin prefix to the plugin', function * () {
+        nock('http://red.example')
+          .get('/accounts/mike')
+          .matchHeader('authorization', 'Bearer abc')
+          .reply(200, {
+            ledger: 'http://red.example',
+            name: 'admin'
+          })
+
+        const plugin = yield this.factory.create({ account: 'http://red.example/accounts/mike' })
+        assert.equal(plugin.getInfo().prefix, 'example.red.', 'should set prefix')
+      })
+
       it('subscribes to the new account', function * () {
         nock('http://red.example')
           .get('/accounts/mary')

@@ -193,6 +193,7 @@ class PluginFactory extends EventEmitter2 {
       username: username,
       password: null,
       account: account,
+      prefix: this.adminPlugin.getInfo().prefix,
       credentials: {
         // make sure that the plugin uses admin credentials
         username: this.adminUsername,

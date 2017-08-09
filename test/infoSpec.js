@@ -109,7 +109,6 @@ describe('Info methods', function () {
       })
       yield plugin.connect()
       const info = plugin.getInfo()
-      console.log(info)
       assert.equal(info.currencyCode, 'XYZ')
       assert.equal(info.currencyScale, 99)
       yield plugin.disconnect()
