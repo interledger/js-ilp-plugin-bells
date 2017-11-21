@@ -179,13 +179,13 @@ const translateTransferNotification = (
       if (fiveBellsTransfer.state === 'executed' && relatedResources &&
           relatedResources.execution_condition_fulfillment) {
         return ['incoming_fulfill', transfer,
-          translateFromCryptoFulfillment(relatedResources.execution_condition_fulfillment)]
+          translateFromCryptoFulfillment(relatedResources.execution_condition_fulfillment), relatedResources.fulfillment_data]
       }
 
       if (fiveBellsTransfer.state === 'rejected' && relatedResources &&
           relatedResources.cancellation_condition_fulfillment) {
         return ['incoming_cancel', transfer,
-          translateFromCryptoFulfillment(relatedResources.cancellation_condition_fulfillment)]
+          translateFromCryptoFulfillment(relatedResources.cancellation_condition_fulfillment), relatedResources.fulfillment_data]
       } else if (fiveBellsTransfer.state === 'rejected') {
         const rejectedCredit = find(fiveBellsTransfer.credits, 'rejected')
         if (rejectedCredit) {
@@ -248,13 +248,13 @@ const translateTransferNotification = (
       if (fiveBellsTransfer.state === 'executed' && relatedResources &&
           relatedResources.execution_condition_fulfillment) {
         return ['outgoing_fulfill', transfer,
-          translateFromCryptoFulfillment(relatedResources.execution_condition_fulfillment)]
+          translateFromCryptoFulfillment(relatedResources.execution_condition_fulfillment), relatedResources.fulfillment_data]
       }
 
       if (fiveBellsTransfer.state === 'rejected' && relatedResources &&
           relatedResources.cancellation_condition_fulfillment) {
         return ['outgoing_cancel', transfer,
-          translateFromCryptoFulfillment(relatedResources.cancellation_condition_fulfillment)]
+          translateFromCryptoFulfillment(relatedResources.cancellation_condition_fulfillment), relatedResources.fulfillment_data]
       } else if (fiveBellsTransfer.state === 'rejected') {
         const rejectedCredit = find(fiveBellsTransfer.credits, 'rejected')
         if (rejectedCredit) {

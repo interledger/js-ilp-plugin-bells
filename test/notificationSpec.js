@@ -634,7 +634,8 @@ function * itEmitsFulfillExecutionCondition () {
         execution_condition: 'ni:///sha-256;uzoYx3K6u-Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U?fpt=preimage-sha-256&cost=32'
       }),
       related_resources: {
-        execution_condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'
+        execution_condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ',
+        fulfillment_data: 'ABAB'
       }
     }
   }))
@@ -646,7 +647,7 @@ function * itEmitsFulfillExecutionCondition () {
   sinon.assert.calledWith(this.stubFulfillExecutionCondition,
     Object.assign(this.transfer, {
       executionCondition: 'uzoYx3K6u-Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U'
-    }), 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
+    }), 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'ABAB')
 }
 
 function * itEmitsFulfillCancellationCondition () {
@@ -661,7 +662,8 @@ function * itEmitsFulfillCancellationCondition () {
         cancellation_condition: 'ni:///sha-256;uzoYx3K6u-Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U?fpt=preimage-sha-256&cost=32'
       }),
       related_resources: {
-        cancellation_condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'
+        cancellation_condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ',
+        fulfillment_data: 'ABAB'
       }
     }
   }))
@@ -674,5 +676,5 @@ function * itEmitsFulfillCancellationCondition () {
   sinon.assert.calledWith(this.stubFulfillCancellationCondition,
     Object.assign(this.transfer, {
       cancellationCondition: 'uzoYx3K6u-Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U'
-    }), 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
+    }), 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'ABAB')
 }
