@@ -625,23 +625,34 @@ class FiveBellsLedger extends EventEmitter2 {
     return null
   }
 
-  fulfillCondition (transferId, conditionFulfillment) {
-    return co.wrap(this._fulfillCondition).call(this, transferId, conditionFulfillment)
+  fulfillCondition (transferId, conditionFulfillment, fulfillmentData) {
+    return co.wrap(this._fulfillCondition).call(this, transferId, conditionFulfillment, fulfillmentData)
   }
 
-  * _fulfillCondition (transferId, conditionFulfillment) {
+  * _fulfillCondition (transferId, conditionFulfillment, fulfillmentData) {
     if (!this.ready) {
       throw new Error('Must be connected before fulfillCondition can be called')
     }
+
+    const supportsFulfillmentData = !!this.ledgerContext.urls.transfer_fulfillment2
+    const url = this.ledgerContext.urls[supportsFulfillmentData ? 'transfer_fulfillment2' : 'transfer_fulfillment']
+    const fulfillment = supportsFulfillmentData
+      ? {
+        condition_fulfillment: translate.translateToCryptoFulfillment(conditionFulfillment),
+        fulfillment_data: fulfillmentData
+      }
+      : translate.translateToCryptoFulfillment(conditionFulfillment)
+
     const fulfillmentRes = yield this._requestWithCredentials({
       method: 'put',
-      uri: this.ledgerContext.urls.transfer_fulfillment.replace(':id', transferId),
-      body: translate.translateToCryptoFulfillment(conditionFulfillment),
-      headers: {
+      uri: url.replace(':id', transferId),
+      body: fulfillment,
+      json: supportsFulfillmentData,
+      headers: supportsFulfillmentData ? {} : {
         'content-type': 'text/plain'
       }
     })
-    const body = getResponseJSON(fulfillmentRes)
+    const body = supportsFulfillmentData ? fulfillmentRes.body : getResponseJSON(fulfillmentRes)
 
     if (fulfillmentRes.statusCode >= 400 && body) {
       if (body.id === 'InvalidBodyError') throw new errors.InvalidFieldsError(body.message)

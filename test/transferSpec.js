@@ -356,7 +356,7 @@ describe('Transfer methods', function () {
   describe('fulfillCondition', function () {
     it('throws InvalidFieldsError on InvalidBodyError', function () {
       nock('http://red.example')
-        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'})
         .matchHeader('authorization', 'Bearer abc')
         .reply(422, {id: 'InvalidBodyError', message: 'fail'})
       return this.plugin.fulfillCondition('6851929f-5a91-4d02-b9f4-4ae6b7f1768c', 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
@@ -365,7 +365,7 @@ describe('Transfer methods', function () {
 
     it('throws NotAcceptedError on UnmetConditionError', function () {
       nock('http://red.example')
-        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'})
         .matchHeader('authorization', 'Bearer abc')
         .reply(422, {id: 'UnmetConditionError', message: 'fail'})
       return this.plugin.fulfillCondition('6851929f-5a91-4d02-b9f4-4ae6b7f1768c', 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
@@ -374,7 +374,7 @@ describe('Transfer methods', function () {
 
     it('throws TransferNotConditionalError', function () {
       nock('http://red.example')
-        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'})
         .matchHeader('authorization', 'Bearer abc')
         .reply(422, {id: 'TransferNotConditionalError', message: 'fail'})
       return this.plugin.fulfillCondition('6851929f-5a91-4d02-b9f4-4ae6b7f1768c', 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
@@ -383,7 +383,7 @@ describe('Transfer methods', function () {
 
     it('throws TransferNotFoundError on NotFoundError', function () {
       nock('http://red.example')
-        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'})
         .matchHeader('authorization', 'Bearer abc')
         .reply(404, {id: 'NotFoundError', message: 'fail'})
       return this.plugin.fulfillCondition('6851929f-5a91-4d02-b9f4-4ae6b7f1768c', 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
@@ -397,7 +397,7 @@ describe('Transfer methods', function () {
 
     it('throws AlreadyRolledBackError when fulfilling a rejected transfer', function () {
       nock('http://red.example')
-        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'})
         .matchHeader('authorization', 'Bearer abc')
         .reply(404, {
           id: 'InvalidModificationError',
@@ -407,17 +407,69 @@ describe('Transfer methods', function () {
         .should.be.rejectedWith(errors.AlreadyRolledBackError, 'Transfers in state rejected may not be executed')
     })
 
-    it('puts the fulfillment', function * () {
+    it('puts the fulfillment for ledgers that don\'t support fulfillment data', function * () {
+      nock.removeInterceptor(this.nockInfo)
+      nock('http://red.example')
+        .get('/auth_token')
+        .reply(200, {token: 'abc'})
+      nock('http://red.example')
+        .get('/accounts/mike')
+        .reply(200, {
+          ledger: 'http://red.example',
+          name: 'mike'
+        })
+        .get('/transfers/1')
+        .reply(403)
+      const urls = this.infoRedLedger.urls
+      delete urls.transfer_fulfillment2
+      const nockInfo = nock('http://red.example')
+        .get('/')
+        .reply(200, _.merge(this.infoRedLedger, {
+          urls
+        }))
       nock('http://red.example')
         .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
         .matchHeader('authorization', 'Bearer abc')
         .reply(201)
-      yield assert.isFulfilled(this.plugin.fulfillCondition(
+
+      const plugin = new PluginBells({
+        prefix: 'example.red.',
+        account: 'http://red.example/accounts/mike',
+        password: 'mike',
+        debugReplyNotifications: true,
+        debugAutofund: {
+          connector: 'http://mark.example',
+          admin: {username: 'adminuser', password: 'adminpass'}
+        }
+      })
+      yield plugin.connect()
+
+      yield assert.isFulfilled(plugin.fulfillCondition(
         '6851929f-5a91-4d02-b9f4-4ae6b7f1768c',
         'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'), null)
+      nockInfo.done()
     })
 
-    it('sets the content type to text/plain', function * () {
+    it('sets the content type to text/plain for ledgers that don\'t support fulfillment data', function * () {
+      nock.removeInterceptor(this.nockInfo)
+      nock('http://red.example')
+        .get('/auth_token')
+        .reply(200, {token: 'abc'})
+      nock('http://red.example')
+        .get('/accounts/mike')
+        .reply(200, {
+          ledger: 'http://red.example',
+          name: 'mike'
+        })
+        .get('/transfers/1')
+        .reply(403)
+      const urls = this.infoRedLedger.urls
+      delete urls.transfer_fulfillment2
+      const nockInfo = nock('http://red.example')
+        .get('/')
+        .reply(200, _.merge(this.infoRedLedger, {
+          urls
+        }))
       nock('http://red.example', {
         reqheaders: {
           'content-type': 'text/plain'
@@ -426,9 +478,36 @@ describe('Transfer methods', function () {
         .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
         .matchHeader('authorization', 'Bearer abc')
         .reply(201)
-      yield assert.isFulfilled(this.plugin.fulfillCondition(
+
+      const plugin = new PluginBells({
+        prefix: 'example.red.',
+        account: 'http://red.example/accounts/mike',
+        password: 'mike',
+        debugReplyNotifications: true,
+        debugAutofund: {
+          connector: 'http://mark.example',
+          admin: {username: 'adminuser', password: 'adminpass'}
+        }
+      })
+      yield plugin.connect()
+
+      yield assert.isFulfilled(plugin.fulfillCondition(
         '6851929f-5a91-4d02-b9f4-4ae6b7f1768c',
         'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'), null)
+      nockInfo.done()
+    })
+
+    it('puts the fulfillment for ledgers that support fulfillment data', function * () {
+      nock('http://red.example')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {
+          condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ',
+          fulfillment_data: 'ABAB'
+        })
+        .matchHeader('authorization', 'Bearer abc')
+        .reply(201)
+      yield assert.isFulfilled(this.plugin.fulfillCondition(
+        '6851929f-5a91-4d02-b9f4-4ae6b7f1768c',
+        'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'ABAB'), null)
     })
 
     it('should use the transfer_fulfillment url from the ledger metadata', function * () {
@@ -448,11 +527,11 @@ describe('Transfer methods', function () {
         .get('/')
         .reply(200, _.merge(this.infoRedLedger, {
           urls: {
-            transfer_fulfillment: 'http://red.example/other/place/to/submit/transfers/:id/fulfillment'
+            transfer_fulfillment2: 'http://red.example/other/place/to/submit/transfers/:id/fulfillment2'
           }
         }))
       const fulfillmentNock = nock('http://red.example')
-        .put('/other/place/to/submit/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment')
+        .put('/other/place/to/submit/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2')
         .matchHeader('authorization', 'Bearer abc')
         .reply(200)
       const plugin = new PluginBells({
@@ -477,7 +556,7 @@ describe('Transfer methods', function () {
 
     it('throws an ExternalError on 500', function () {
       nock('http://red.example')
-        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment', 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ')
+        .put('/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c/fulfillment2', {condition_fulfillment: 'oCKAIB0vHuRMNNlygIJcrrNnYdjoWm7qpstxwzPBFzC89tqJ'})
         .matchHeader('authorization', 'Bearer abc')
         .reply(500)
       return assert.isRejected(this.plugin.fulfillCondition('6851929f-5a91-4d02-b9f4-4ae6b7f1768c', 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'), ExternalError, /Failed to submit fulfillment for transfer: 6851929f-5a91-4d02-b9f4-4ae6b7f1768c Error: undefined/)

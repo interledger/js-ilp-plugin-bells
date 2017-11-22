@@ -7,6 +7,7 @@ const ExternalError = require('../errors/external-error')
 const startsWith = require('lodash/fp/startsWith')
 
 const REQUIRED_LEDGER_URLS = [ 'transfer', 'transfer_fulfillment', 'transfer_rejection', 'account', 'auth_token', 'websocket', 'message' ]
+const OPTIONAL_LEDGER_URLS = [ 'transfer_fulfillment2' ]
 
 function parseAndValidateLedgerUrls (metadataUrls) {
   if (!metadataUrls) {
@@ -29,6 +30,11 @@ function parseAndValidateLedgerUrls (metadataUrls) {
       }
     }
     urls[service] = metadataUrls[service]
+  })
+  OPTIONAL_LEDGER_URLS.forEach((service) => {
+    if (metadataUrls[service]) {
+      urls[service] = metadataUrls[service]
+    }
   })
 
   return urls

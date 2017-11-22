@@ -12,6 +12,7 @@
     "health": "http://red.example/health",
     "transfer": "http://red.example/transfers/:id",
     "transfer_fulfillment": "http://red.example/transfers/:id/fulfillment",
+    "transfer_fulfillment2": "http://red.example/transfers/:id/fulfillment2",
     "transfer_rejection": "http://red.example/transfers/:id/rejection",
     "transfer_state": "http://red.example/transfers/:id/state",
     "connectors": "http://red.example/connectors",
