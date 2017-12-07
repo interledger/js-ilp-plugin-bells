@@ -484,6 +484,8 @@ class FiveBellsLedger extends EventEmitter2 {
       })
     })
 
+    debug('sending request:', JSON.stringify(message))
+
     yield this.emitAsync('outgoing_request', message)
     return yield Promise.race([
       responded,
@@ -643,6 +645,8 @@ class FiveBellsLedger extends EventEmitter2 {
       }
       : translate.translateToCryptoFulfillment(conditionFulfillment)
 
+    debug('submitting fulfillment for transfer:', transferId, 'fulfillment:', conditionFulfillment, 'fulfillmentdata:', fulfillmentData)
+
     const fulfillmentRes = yield this._requestWithCredentials({
       method: 'put',
       uri: url.replace(':id', transferId),
@@ -737,6 +741,8 @@ class FiveBellsLedger extends EventEmitter2 {
     })
     const body = rejectionRes.body
 
+    debug('rejecting incoming transfer:', transferId, rejectionMessage)
+
     if (rejectionRes.statusCode >= 400) {
       if (body && body.id === 'UnauthorizedError') throw new errors.NotAcceptedError(body.message)
       if (body && body.id === 'NotFoundError') throw new errors.TransferNotFoundError(body.message)
@@ -806,6 +812,8 @@ class FiveBellsLedger extends EventEmitter2 {
       this.account,
       this.ledgerContext
     )
+
+    debug('got notification:', JSON.stringify(notification), ', translated to plugin event:', eventParams)
     yield this.emitAsync.apply(this, eventParams)
   }
 
